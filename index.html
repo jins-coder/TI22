@@ -1,0 +1,428 @@
+<!DOCTYPE html>
+<html lang="en" class="scroll-smooth">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Titanium (Ti22) — The Native Web Runtime & Distributed AI Engine</title>
+  <meta name="description" content="Titanium (Ti22) v10.0.0 Supercluster — The high-performance Rust web runtime with Dual-Engine MVC, Embedded SQLite ActiveRecord ORM, Realtime WebSockets, and Singularity AI.">
+  <script src="https://cdn.tailwindcss.com"></script>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;500;700&family=Plus+Jakarta+Sans:wght@400;500;600;700;800;900&display=swap" rel="stylesheet">
+  <script>
+    tailwind.config = {
+      darkMode: 'class',
+      theme: {
+        extend: {
+          fontFamily: {
+            sans: ['"Plus Jakarta Sans"', 'sans-serif'],
+            mono: ['"JetBrains Mono"', 'monospace'],
+          },
+          colors: {
+            brand: {
+              cyan: '#38bdf8',
+              accent: '#818cf8',
+              purple: '#c084fc',
+              dark: '#070b14',
+              card: '#0d1322',
+              border: '#1b253b',
+              success: '#10b981',
+              warning: '#f59e0b',
+              danger: '#f43f5e'
+            }
+          }
+        }
+      }
+    }
+  </script>
+  <style>
+    body { background-color: #070b14; color: #f1f5f9; }
+    .glow-cyan { box-shadow: 0 0 35px -5px rgba(56, 189, 248, 0.25); }
+    .glow-purple { box-shadow: 0 0 35px -5px rgba(192, 132, 252, 0.25); }
+    .glass-nav { background: rgba(7, 11, 20, 0.85); backdrop-filter: blur(16px); border-bottom: 1px solid rgba(255, 255, 255, 0.07); }
+    .glass-card { background: rgba(13, 19, 34, 0.75); backdrop-filter: blur(12px); border: 1px solid rgba(255, 255, 255, 0.08); }
+    .code-block { background: #050811; border: 1px solid #1b253b; font-family: 'JetBrains Mono', monospace; }
+  </style>
+</head>
+<body class="antialiased selection:bg-brand-cyan selection:text-slate-950">
+
+  <!-- Top Announcement Bar -->
+  <div class="bg-gradient-to-r from-sky-500/15 via-indigo-500/15 to-purple-500/15 border-b border-white/5 py-2 text-center text-xs font-semibold text-sky-300">
+    <span>⚡ <strong>Titanium v10.0.0 (Titanium X Supercluster)</strong> is now live! Multi-Node Mesh, Singularity AI & Realtime WebSockets.</span>
+  </div>
+
+  <!-- Main Navigation -->
+  <header class="sticky top-0 z-50 glass-nav">
+    <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 flex items-center justify-between h-16">
+      <div class="flex items-center gap-3">
+        <div class="w-9 h-9 rounded-xl bg-gradient-to-tr from-sky-400 to-indigo-500 flex items-center justify-center text-slate-950 font-black text-base shadow-lg shadow-sky-500/20">
+          Ti
+        </div>
+        <div class="flex items-center gap-2">
+          <span class="font-black text-xl tracking-wider text-white">TITANIUM <span class="text-sky-400 font-mono text-sm font-bold">X</span></span>
+          <span class="text-[10px] font-mono px-2 py-0.5 rounded-full bg-sky-500/10 border border-sky-500/20 text-sky-300 font-bold">v10.0.0</span>
+        </div>
+      </div>
+
+      <nav class="hidden md:flex items-center gap-6 text-xs font-bold text-slate-300">
+        <a href="#overview" class="hover:text-sky-400 transition">Overview</a>
+        <a href="#dual-engine" class="hover:text-sky-400 transition">Dual Engine</a>
+        <a href="#orm" class="hover:text-sky-400 transition">ActiveRecord ORM</a>
+        <a href="#realtime" class="hover:text-sky-400 transition">Realtime WS</a>
+        <a href="#singularity-ai" class="hover:text-sky-400 transition">Singularity AI</a>
+        <a href="#supercluster" class="hover:text-sky-400 transition">Supercluster</a>
+        <a href="#api" class="hover:text-sky-400 transition">API Reference</a>
+      </nav>
+
+      <div class="flex items-center gap-3">
+        <a href="https://github.com/jins-coder/TI22" target="_blank" class="px-4 py-2 rounded-xl bg-white/5 hover:bg-white/10 border border-white/10 text-xs font-bold text-white transition flex items-center gap-2">
+          <svg class="w-4 h-4" fill="currentColor" viewBox="0 0 24 24"><path fill-rule="evenodd" clip-rule="evenodd" d="M12 2C6.477 2 2 6.484 2 12.017c0 4.425 2.865 8.18 6.839 9.504.5.092.682-.217.682-.483 0-.237-.008-.868-.013-1.703-2.782.605-3.369-1.343-3.369-1.343-.454-1.158-1.11-1.466-1.11-1.466-.908-.62.069-.608.069-.608 1.003.07 1.53 1.032 1.53 1.032.892 1.53 2.341 1.088 2.91.832.092-.647.35-1.088.636-1.338-2.22-.253-4.555-1.113-4.555-4.951 0-1.093.39-1.988 1.029-2.688-.103-.253-.446-1.272.098-2.65 0 0 .84-.27 2.75 1.026A9.564 9.564 0 0112 6.844c.85.004 1.705.115 2.504.337 1.909-1.296 2.747-1.027 2.747-1.027.546 1.379.202 2.398.1 2.651.64.7 1.028 1.595 1.028 2.688 0 3.848-2.339 4.695-4.566 4.943.359.309.678.92.678 1.855 0 1.338-.012 2.419-.012 2.747 0 .268.18.58.688.482A10.019 10.019 0 0022 12.017C22 6.484 17.522 2 12 2z"/></svg>
+          <span>GitHub</span>
+        </a>
+      </div>
+    </div>
+  </header>
+
+  <!-- Hero Section -->
+  <section class="relative pt-20 pb-16 overflow-hidden">
+    <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 text-center space-y-6">
+      
+      <div class="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-sky-500/10 border border-sky-500/30 text-sky-400 text-xs font-semibold">
+        <span>🚀 The All-In-One Native Web Runtime</span>
+      </div>
+
+      <h1 class="text-4xl sm:text-6xl lg:text-7xl font-black text-white tracking-tight leading-none max-w-4xl mx-auto">
+        Ultra-Fast Web Apps.<br>
+        <span class="bg-gradient-to-r from-sky-400 via-indigo-400 to-purple-400 bg-clip-text text-transparent">Zero Node.js. Zero Config.</span>
+      </h1>
+
+      <p class="text-base sm:text-lg text-slate-400 max-w-2xl mx-auto leading-relaxed">
+        Titanium combines single-file reactive pages, domain-driven MVC, embedded SQLite with ActiveRecord ORM, native WebSockets, and Singularity AI agents in a single compiled Rust binary.
+      </p>
+
+      <!-- Terminal Quickstart Box -->
+      <div class="max-w-xl mx-auto mt-8 code-block rounded-2xl p-4 text-left shadow-2xl relative">
+        <div class="flex items-center justify-between pb-3 border-b border-white/5 text-xs text-slate-500">
+          <div class="flex gap-1.5">
+            <div class="w-3 h-3 rounded-full bg-rose-500/70"></div>
+            <div class="w-3 h-3 rounded-full bg-amber-500/70"></div>
+            <div class="w-3 h-3 rounded-full bg-emerald-500/70"></div>
+          </div>
+          <span>bash / powershell</span>
+        </div>
+        <div class="mt-3 space-y-1 text-xs font-mono text-slate-300">
+          <p><span class="text-sky-400">$</span> cargo run -- dev ./example</p>
+          <p class="text-emerald-400">⚡ Titanium (Ti22) Native Engine v10.0.0 ready on http://127.0.0.1:8080</p>
+          <p class="text-purple-400">🎨 Web Studio GUI ready on http://127.0.0.1:8080/__titanium_studio</p>
+        </div>
+      </div>
+
+    </div>
+  </section>
+
+  <!-- Core Pillars Grid -->
+  <section id="overview" class="py-16 border-t border-white/5">
+    <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+      <div class="text-center space-y-2 mb-12">
+        <h2 class="text-xs font-bold text-sky-400 tracking-widest uppercase">Pillars of Titanium X</h2>
+        <p class="text-3xl font-extrabold text-white">Engineered for Unmatched Velocity</p>
+      </div>
+
+      <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+        
+        <div class="glass-card p-6 rounded-2xl space-y-3">
+          <div class="w-10 h-10 rounded-xl bg-sky-500/20 text-sky-400 flex items-center justify-center font-bold text-lg">⚡</div>
+          <h3 class="text-lg font-bold text-white">Dual Engine Architecture</h3>
+          <p class="text-xs text-slate-400 leading-relaxed">
+            Run Single-File Components (<code>.titanium</code>) side-by-side with Enterprise MVC (Controllers, Models, Views) on the same runtime without restarts.
+          </p>
+        </div>
+
+        <div class="glass-card p-6 rounded-2xl space-y-3">
+          <div class="w-10 h-10 rounded-xl bg-indigo-500/20 text-indigo-400 flex items-center justify-center font-bold text-lg">🗄️</div>
+          <h3 class="text-lg font-bold text-white">Embedded SQLite & ORM</h3>
+          <p class="text-xs text-slate-400 leading-relaxed">
+            High-concurrency WAL mode database with fluent ActiveRecord query builder (<code>model("products").where("price", "&gt;", 50).get()</code>).
+          </p>
+        </div>
+
+        <div class="glass-card p-6 rounded-2xl space-y-3">
+          <div class="w-10 h-10 rounded-xl bg-purple-500/20 text-purple-400 flex items-center justify-center font-bold text-lg">📡</div>
+          <h3 class="text-lg font-bold text-white">Hyperdrive WebSockets</h3>
+          <p class="text-xs text-slate-400 leading-relaxed">
+            Channel-based pub/sub routing with automatic SSE fallback and zero-teardown DOM soft-morphing with <code>data-live</code> attributes.
+          </p>
+        </div>
+
+        <div class="glass-card p-6 rounded-2xl space-y-3">
+          <div class="w-10 h-10 rounded-xl bg-emerald-500/20 text-emerald-400 flex items-center justify-center font-bold text-lg">🧠</div>
+          <h3 class="text-lg font-bold text-white">Singularity AI & RAG</h3>
+          <p class="text-xs text-slate-400 leading-relaxed">
+            Built-in neural reasoning engine, live token streaming (<code>ai_stream</code>), and semantic vector knowledge retrieval (<code>ai_rag</code>).
+          </p>
+        </div>
+
+        <div class="glass-card p-6 rounded-2xl space-y-3">
+          <div class="w-10 h-10 rounded-xl bg-amber-500/20 text-amber-400 flex items-center justify-center font-bold text-lg">🌐</div>
+          <h3 class="text-lg font-bold text-white">Supercluster Mesh</h3>
+          <p class="text-xs text-slate-400 leading-relaxed">
+            Multi-node peer discovery, Primary-Replica cluster leadership, and distributed SQLite WAL commit replication.
+          </p>
+        </div>
+
+        <div class="glass-card p-6 rounded-2xl space-y-3">
+          <div class="w-10 h-10 rounded-xl bg-rose-500/20 text-rose-400 flex items-center justify-center font-bold text-lg">🎨</div>
+          <h3 class="text-lg font-bold text-white">Visual Web Studio</h3>
+          <p class="text-xs text-slate-400 leading-relaxed">
+            Built-in GUI at <code>/__titanium_studio</code> featuring live SQLite table browser, SQL console, AI playground, and cluster topology map.
+          </p>
+        </div>
+
+      </div>
+    </div>
+  </section>
+
+  <!-- Dual Engine Section -->
+  <section id="dual-engine" class="py-16 border-t border-white/5">
+    <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 space-y-8">
+      <div>
+        <h2 class="text-xs font-bold text-sky-400 tracking-widest uppercase">Paradigm Unified</h2>
+        <p class="text-3xl font-extrabold text-white">1. Dual-Engine Architecture</p>
+      </div>
+
+      <div class="grid grid-cols-1 lg:grid-cols-2 gap-8">
+        <!-- Single File Component Example -->
+        <div class="glass-card p-6 rounded-2xl space-y-4">
+          <div class="flex items-center justify-between pb-2 border-b border-white/10">
+            <span class="text-sm font-bold text-white">Single-File Page (<code>pages/product/[id].titanium</code>)</span>
+            <span class="text-[10px] font-mono bg-sky-500/20 text-sky-300 px-2 py-0.5 rounded">Rhai + Jinja2</span>
+          </div>
+          <pre class="code-block p-4 rounded-xl text-xs overflow-x-auto text-slate-200"><code>---
+// Server Scripting Block (Rhai)
+let id = params.id;
+let product = model("products").find(id);
+
+if product == () {
+  return redirect("/404");
+}
+---
+&lt;!DOCTYPE html&gt;
+&lt;html&gt;
+&lt;head&gt;&lt;title&gt;{{ product.name }}&lt;/title&gt;&lt;/head&gt;
+&lt;body&gt;
+  &lt;h1&gt;{{ product.name }}&lt;/h1&gt;
+  &lt;p&gt;Price: ${{ product.price }}&lt;/p&gt;
+  &lt;span data-live="inventory" data-live-key="stock"&gt;{{ product.stock }} in stock&lt;/span&gt;
+&lt;/body&gt;
+&lt;/html&gt;</code></pre>
+        </div>
+
+        <!-- MVC Controller Example -->
+        <div class="glass-card p-6 rounded-2xl space-y-4">
+          <div class="flex items-center justify-between pb-2 border-b border-white/10">
+            <span class="text-sm font-bold text-white">MVC Controller (<code>app/controllers/products.rhai</code>)</span>
+            <span class="text-[10px] font-mono bg-indigo-500/20 text-indigo-300 px-2 py-0.5 rounded">Clean Domain</span>
+          </div>
+          <pre class="code-block p-4 rounded-xl text-xs overflow-x-auto text-slate-200"><code>// Product Catalog Controller
+fn index(req, session) {
+  let products = model("products")
+    .where("stock", "&gt;", 0)
+    .order_by("price", "DESC")
+    .limit(10)
+    .get();
+
+  return view("products/index", #{
+    title: "Catalog",
+    items: products
+  });
+}</code></pre>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ActiveRecord ORM Section -->
+  <section id="orm" class="py-16 border-t border-white/5">
+    <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 space-y-6">
+      <div>
+        <h2 class="text-xs font-bold text-indigo-400 tracking-widest uppercase">Database Engine</h2>
+        <p class="text-3xl font-extrabold text-white">2. Fluent ActiveRecord ORM</p>
+      </div>
+
+      <div class="glass-card p-6 rounded-2xl space-y-4">
+        <p class="text-xs text-slate-300">
+          Titanium provides a zero-setup fluent query builder and schema migration runner backed by embedded SQLite WAL mode:
+        </p>
+
+        <pre class="code-block p-4 rounded-xl text-xs overflow-x-auto text-sky-300"><code>// Fluent Query Builder
+let expensive_watches = model("products")
+  .where("category", "Watches")
+  .where("price", ">=", 200.0)
+  .order_by("price", "DESC")
+  .limit(5)
+  .get();
+
+// CRUD Helpers
+let new_order = model("orders").create(#{
+  order_number: "TI-8941",
+  total: 349.99,
+  status: "Processing"
+});
+
+// Update & Delete
+model("products").update(14, #{ stock: 25 });
+model("cart_items").delete(8);</code></pre>
+      </div>
+    </div>
+  </section>
+
+  <!-- Realtime WebSockets Section -->
+  <section id="realtime" class="py-16 border-t border-white/5">
+    <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 space-y-6">
+      <div>
+        <h2 class="text-xs font-bold text-purple-400 tracking-widest uppercase">Live Streams</h2>
+        <p class="text-3xl font-extrabold text-white">3. Hyperdrive WebSockets & Live Channels</p>
+      </div>
+
+      <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
+        <div class="glass-card p-6 rounded-2xl space-y-3">
+          <h4 class="text-sm font-bold text-white">Server-Side Broadcast (Rhai)</h4>
+          <pre class="code-block p-4 rounded-xl text-xs overflow-x-auto text-purple-300"><code>// Broadcast order event to live subscribers
+ws_broadcast("orders", #{
+  order_number: "TI-10042",
+  customer: "Alice",
+  total: 189.00
+});
+
+// Broadcast across all connected clients
+ws_broadcast_all(#{ announcement: "Flash sale active!" });</code></pre>
+        </div>
+
+        <div class="glass-card p-6 rounded-2xl space-y-3">
+          <h4 class="text-sm font-bold text-white">Client-Side JavaScript Bridge</h4>
+          <pre class="code-block p-4 rounded-xl text-xs overflow-x-auto text-sky-300"><code>// Subscribe to channel in browser
+const unsub = Titanium.subscribe('orders', (order) => {
+  showToast(`New Order #${order.order_number}: $${order.total}`);
+});
+
+// Broadcast from browser
+Titanium.broadcast('chat', { text: 'Hello!' });</code></pre>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- Singularity AI Section -->
+  <section id="singularity-ai" class="py-16 border-t border-white/5">
+    <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 space-y-6">
+      <div>
+        <h2 class="text-xs font-bold text-emerald-400 tracking-widest uppercase">Agentic Intelligence</h2>
+        <p class="text-3xl font-extrabold text-white">4. Singularity AI & Semantic Vector RAG</p>
+      </div>
+
+      <div class="glass-card p-6 rounded-2xl space-y-4">
+        <pre class="code-block p-4 rounded-xl text-xs overflow-x-auto text-emerald-300"><code>// 1. Vector Knowledge Upsert
+vector_upsert("faq", "doc_1", "Our return window is 30 days for Grade 5 titanium products.");
+
+// 2. Semantic RAG Query
+let answer = ai_rag("What is the return policy?", "faq", 3);
+
+// 3. Client Real-Time Token Streaming
+Titanium.aiStream("Recommend an EDC knife", {
+  onToken: (token, fullText) => updateUI(fullText),
+  onDone: (fullText) => finishUI()
+});</code></pre>
+      </div>
+    </div>
+  </section>
+
+  <!-- Supercluster Mesh Section -->
+  <section id="supercluster" class="py-16 border-t border-white/5">
+    <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 space-y-6">
+      <div>
+        <h2 class="text-xs font-bold text-amber-400 tracking-widest uppercase">Deca Milestone</h2>
+        <p class="text-3xl font-extrabold text-white">5. Supercluster X Multi-Node Mesh</p>
+      </div>
+
+      <div class="glass-card p-6 rounded-2xl space-y-4">
+        <p class="text-xs text-slate-300">
+          Scale across distributed instances with automatic peer heartbeat discovery and real-time SQLite WAL commit broadcasting:
+        </p>
+
+        <pre class="code-block p-4 rounded-xl text-xs overflow-x-auto text-amber-300"><code>// Check node state
+let node_id = cluster_node_id();
+let is_leader = cluster_is_primary();
+
+// Retrieve all mesh nodes with round-trip latency
+let peers = cluster_nodes();
+
+// Broadcast distributed WAL transaction sync
+cluster_broadcast("wal_sync", #{ table: "orders", record_id: 104 });</code></pre>
+      </div>
+    </div>
+  </section>
+
+  <!-- API Reference Table -->
+  <section id="api" class="py-16 border-t border-white/5">
+    <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 space-y-6">
+      <div>
+        <h2 class="text-xs font-bold text-sky-400 tracking-widest uppercase">Quick Cheatsheet</h2>
+        <p class="text-3xl font-extrabold text-white">Global Rhai & JavaScript API Reference</p>
+      </div>
+
+      <div class="overflow-x-auto glass-card rounded-2xl">
+        <table class="w-full text-left text-xs text-slate-300">
+          <thead class="bg-white/5 text-sky-400 font-bold border-b border-white/10 uppercase tracking-wider">
+            <tr>
+              <th class="p-4">Category</th>
+              <th class="p-4">Function Signature</th>
+              <th class="p-4">Description</th>
+            </tr>
+          </thead>
+          <tbody class="divide-y divide-white/5 font-mono">
+            <tr>
+              <td class="p-4 text-white font-bold font-sans">ORM & DB</td>
+              <td class="p-4 text-sky-300">model(table)</td>
+              <td class="p-4 font-sans">ActiveRecord query builder (.where, .order_by, .limit, .get, .find, .create)</td>
+            </tr>
+            <tr>
+              <td class="p-4 text-white font-bold font-sans">Realtime</td>
+              <td class="p-4 text-purple-300">ws_broadcast(channel, data)</td>
+              <td class="p-4 font-sans">Broadcast message to live channel subscribers</td>
+            </tr>
+            <tr>
+              <td class="p-4 text-white font-bold font-sans">Singularity AI</td>
+              <td class="p-4 text-emerald-300">ai_generate(prompt) / ai_rag(query)</td>
+              <td class="p-4 font-sans">Generate AI response or run vector-grounded semantic retrieval</td>
+            </tr>
+            <tr>
+              <td class="p-4 text-white font-bold font-sans">Cluster</td>
+              <td class="p-4 text-amber-300">cluster_broadcast(event, payload)</td>
+              <td class="p-4 font-sans">Broadcast event across multi-node Supercluster mesh</td>
+            </tr>
+            <tr>
+              <td class="p-4 text-white font-bold font-sans">Frontend JS</td>
+              <td class="p-4 text-sky-300">Titanium.subscribe(channel, cb)</td>
+              <td class="p-4 font-sans">Live WebSocket subscriber with data-live soft-morphing</td>
+            </tr>
+            <tr>
+              <td class="p-4 text-white font-bold font-sans">Frontend JS</td>
+              <td class="p-4 text-emerald-300">Titanium.aiStream(prompt, options)</td>
+              <td class="p-4 font-sans">Live token-by-token SSE streaming receiver</td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+    </div>
+  </section>
+
+  <!-- Footer -->
+  <footer class="py-10 border-t border-white/5 text-center text-xs text-slate-500">
+    <div class="max-w-7xl mx-auto px-4 space-y-2">
+      <p>⚡ Titanium (Ti22) v10.0.0 (Titanium X Supercluster) — Built with High-Performance Rust.</p>
+      <p>Released under MIT License. Continuous Deployment via GitHub Actions.</p>
+    </div>
+  </footer>
+
+</body>
+</html>

@@ -5,12 +5,9 @@
 
 ---
 
-## 🗺️ Milestones & Documentation
+## 🗺️ Live Documentation & Overview
+* 📖 **[Interactive HTML Documentation](file:///e:/afterquery/shopify/themes/pa/titanium/index.html)** — Complete architecture guide, API cheatsheet & interactive visual reference.
 * 🧩 **[Official VS Code Extension](file:///e:/afterquery/shopify/themes/pa/titanium/vscode-titanium)** — Dual-syntax highlighting (`.titanium`, `.ti`), rich snippets & Web Studio controller.
-* 💡 **[Ecosystem Comparison & Advantages](file:///e:/afterquery/shopify/themes/pa/titanium/ECOSYSTEM_ADVANTAGES.md)** — What Node, PHP, Python, Go, and Rails lack vs. what Titanium solves.
-* 📍 **[Project Milestones & Roadmap](file:///e:/afterquery/shopify/themes/pa/titanium/MILESTONES.md)** — Completed achievements (v0.1.0 → v6.0.0).
-* 📋 **[Master CHANGELOG](file:///e:/afterquery/shopify/themes/pa/titanium/CHANGELOG.md)** — Detailed changelog for every release.
-* 📦 **[Versions Directory](file:///e:/afterquery/shopify/themes/pa/titanium/versions)** — Individual release notes for each version.
 
 ---
 
