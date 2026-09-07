@@ -231,7 +231,7 @@ fn print_project_info(target: &PathBuf) {
     println!("  Pages Exists:    {}", pages_dir.exists());
     println!("  Migrations:      {}", migrations_dir.exists());
     println!("  Public Assets:   {}", public_dir.exists());
-    println!("  Version:         6.0.0 (Omniverse Modular)");
+    println!("  Version:         7.0.0 (Dual Engine: MVC + SFP)");
     println!("  Runtime:         Rust Native Binary\n");
 }
 
@@ -243,43 +243,25 @@ fn scaffold_project(target: &PathBuf) {
     let _ = std::fs::create_dir_all(&public);
 
     let index_ti = r#"---
-db_exec("CREATE TABLE IF NOT EXISTS notes (id INTEGER PRIMARY KEY AUTOINCREMENT, title TEXT, created_at DATETIME DEFAULT CURRENT_TIMESTAMP);")
-
-if req.method == "POST" {
-  if body.title != () && body.title != "" {
-    db_insert("notes", #{ title: body.title })
-    session.flash("msg", "✨ Note created in Titanium native engine!")
-  }
-  return redirect("/")
-}
-
-let notes = db_query("SELECT * FROM notes ORDER BY id DESC")
+let title = "Hello from Titanium v7.0.0 Dual Engine!";
+let db_info = "ActiveRecord ORM + MVC + Turbo SPA ready.";
 ---
 <!DOCTYPE html>
-<html>
+<html lang="en">
 <head>
-  <title>Titanium Starter</title>
-  <link rel="stylesheet" href="/app.css">
+  <meta charset="UTF-8">
+  <title>{{ title }}</title>
+  <style>
+    body { font-family: system-ui, sans-serif; background: #090d16; color: #f8fafc; padding: 40px; }
+    .card { background: #0f172a; border: 1px solid #1e293b; border-radius: 12px; padding: 32px; max-width: 600px; margin: 40px auto; }
+    h1 { color: #38bdf8; font-size: 24px; }
+    p { color: #94a3b8; font-size: 15px; margin-top: 8px; }
+  </style>
 </head>
 <body>
-  <div class="container">
-    <h1>⚡ Titanium App</h1>
-    <p>Fast, friendly, native Rust web engine with embedded SQLite.</p>
-
-    {{ if msg }}
-      <div class="alert">{{ msg }}</div>
-    {{ endif }}
-
-    <form method="POST" action="/">
-      <input type="text" name="title" placeholder="New note..." required>
-      <button type="submit">Save</button>
-    </form>
-
-    <ul>
-      {{ for n in notes }}
-        <li>{{ n.title }} <span>{{ n.created_at }}</span></li>
-      {{ endfor }}
-    </ul>
+  <div class="card">
+    <h1>{{ title }}</h1>
+    <p>{{ db_info }}</p>
   </div>
 </body>
 </html>
@@ -311,7 +293,7 @@ worker_threads = 2
 fn print_help() {
     println!(
         r#"
-  ⚡ Titanium (Ti22) — Native Web Runtime v6.0.0 (Omniverse)
+  ⚡ Titanium (Ti22) — Native Web Runtime v7.0.0 (Dual Engine)
   
   Usage:
     titanium dev [dir]               Start live development server

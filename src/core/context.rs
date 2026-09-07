@@ -47,4 +47,9 @@ pub enum TitaniumResponse {
         content_type: String,
         bytes: Vec<u8>,
     },
+    View {
+        status: u16,
+        view: String,
+        data: Dynamic,
+    },
 }

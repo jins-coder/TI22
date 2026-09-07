@@ -1,7 +1,7 @@
 use crate::core::context::{TitaniumRequest, TitaniumResponse};
 use crate::core::session::SessionHandle;
 use crate::services::{JobQueue, MediaUtils, PubSubHub, VectorEngine};
-use crate::storage::{CacheStore, Database};
+use crate::storage::{CacheStore, Database, ModelDef, QueryBuilder};
 use minijinja::{Environment, Value};
 use rhai::{Array, Dynamic, Engine, Map, Scope, AST};
 use sha2::{Digest, Sha256};
@@ -58,6 +58,83 @@ impl TitaniumEngine {
         });
         engine.register_fn("csrf", |s: &mut SessionHandle| -> String {
             s.csrf_token()
+        });
+
+        // ActiveRecord ORM & QueryBuilder (v7.0.0 Dual Engine)
+        engine.register_type_with_name::<ModelDef>("Model");
+        engine.register_type_with_name::<QueryBuilder>("QueryBuilder");
+
+        let db_orm1 = db.clone();
+        engine.register_fn("model", move |table: &str| -> ModelDef {
+            ModelDef::new(table, db_orm1.clone())
+        });
+        let db_orm2 = db.clone();
+        engine.register_fn("define_model", move |table: &str, pk: &str| -> ModelDef {
+            ModelDef::with_pk(table, pk, db_orm2.clone())
+        });
+
+        engine.register_fn("all", |m: &mut ModelDef| -> Array { m.all() });
+        engine.register_fn("find", |m: &mut ModelDef, id: Dynamic| -> Dynamic { m.find(id) });
+        engine.register_fn("create", |m: &mut ModelDef, data: Map| -> Dynamic { m.create(data) });
+        engine.register_fn("count", |m: &mut ModelDef| -> i64 { m.count() });
+
+        engine.register_fn("where", |m: &mut ModelDef, col: &str, val: Dynamic| -> QueryBuilder {
+            let mut q = m.query_builder();
+            q.where_eq(col, val)
+        });
+        engine.register_fn("where", |m: &mut ModelDef, col: &str, op: &str, val: Dynamic| -> QueryBuilder {
+            let mut q = m.query_builder();
+            q.where_op(col, op, val)
+        });
+        engine.register_fn("order_by", |m: &mut ModelDef, col: &str, dir: &str| -> QueryBuilder {
+            let mut q = m.query_builder();
+            q.order_by_clause(col, dir)
+        });
+        engine.register_fn("limit", |m: &mut ModelDef, n: i64| -> QueryBuilder {
+            let mut q = m.query_builder();
+            q.set_limit(n)
+        });
+        engine.register_fn("offset", |m: &mut ModelDef, n: i64| -> QueryBuilder {
+            let mut q = m.query_builder();
+            q.set_offset(n)
+        });
+
+        // QueryBuilder chaining
+        engine.register_fn("where", |q: &mut QueryBuilder, col: &str, val: Dynamic| -> QueryBuilder {
+            q.where_eq(col, val)
+        });
+        engine.register_fn("where", |q: &mut QueryBuilder, col: &str, op: &str, val: Dynamic| -> QueryBuilder {
+            q.where_op(col, op, val)
+        });
+        engine.register_fn("order_by", |q: &mut QueryBuilder, col: &str, dir: &str| -> QueryBuilder {
+            q.order_by_clause(col, dir)
+        });
+        engine.register_fn("limit", |q: &mut QueryBuilder, n: i64| -> QueryBuilder {
+            q.set_limit(n)
+        });
+        engine.register_fn("offset", |q: &mut QueryBuilder, n: i64| -> QueryBuilder {
+            q.set_offset(n)
+        });
+        engine.register_fn("get", |q: &mut QueryBuilder| -> Array { q.get() });
+        engine.register_fn("first", |q: &mut QueryBuilder| -> Dynamic { q.first() });
+        engine.register_fn("count", |q: &mut QueryBuilder| -> i64 { q.count() });
+        engine.register_fn("delete", |q: &mut QueryBuilder| -> i64 { q.delete() });
+        engine.register_fn("update", |q: &mut QueryBuilder, data: Map| -> i64 { q.update(data) });
+
+        // MVC View constructors
+        engine.register_fn("view", |view_name: &str, data: Dynamic| -> TitaniumResponse {
+            TitaniumResponse::View {
+                status: 200,
+                view: view_name.to_string(),
+                data,
+            }
+        });
+        engine.register_fn("view", |view_name: &str| -> TitaniumResponse {
+            TitaniumResponse::View {
+                status: 200,
+                view: view_name.to_string(),
+                data: Dynamic::from(Map::new()),
+            }
         });
 
         // Response constructors
@@ -683,6 +760,13 @@ impl TitaniumEngine {
 
             // If script returned an explicit TitaniumResponse
             if let Some(resp) = eval_result.clone().try_cast::<TitaniumResponse>() {
+                if let TitaniumResponse::View { status, view, data } = resp {
+                    let view_html = render_mvc_view(root_dir, &view, data, session)?;
+                    return Ok(TitaniumResponse::Html {
+                        status,
+                        body: view_html,
+                    });
+                }
                 return Ok(resp);
             }
 
@@ -959,3 +1043,64 @@ fn parse_titanium_file(content: &str, is_api: bool) -> (Option<String>, Option<S
 
     (None, Some(content.to_string()))
 }
+
+fn render_mvc_view(root_dir: &Path, view_name: &str, data: Dynamic, session: &SessionHandle) -> Result<String, String> {
+    let clean_name = view_name
+        .trim_end_matches(".html")
+        .trim_end_matches(".titanium")
+        .trim_end_matches(".ti");
+
+    let candidates = vec![
+        root_dir.join("app").join("views").join(format!("{}.html", clean_name)),
+        root_dir.join("app").join("views").join(format!("{}.titanium", clean_name)),
+        root_dir.join("app").join("views").join(format!("{}.ti", clean_name)),
+        root_dir.join("views").join(format!("{}.html", clean_name)),
+        root_dir.join("views").join(format!("{}.titanium", clean_name)),
+        root_dir.join("views").join(format!("{}.ti", clean_name)),
+    ];
+
+    let found_path = candidates.into_iter().find(|p| p.is_file())
+        .ok_or_else(|| format!("MVC View not found: {}", view_name))?;
+
+    let tmpl_str = std::fs::read_to_string(&found_path).map_err(|e| e.to_string())?;
+    let (_, tmpl_body) = parse_titanium_file(&tmpl_str, false);
+    let raw_tmpl = tmpl_body.unwrap_or(tmpl_str);
+
+    let mut env = Environment::new();
+    add_custom_filters(&mut env);
+    env.add_template("view", &raw_tmpl).map_err(|e| format!("View Syntax Error: {}", e))?;
+    let template = env.get_template("view").map_err(|e| e.to_string())?;
+
+    let mut context_map = serde_json::Map::new();
+    if let Ok(json_val) = rhai::serde::from_dynamic::<serde_json::Value>(&data) {
+        if let serde_json::Value::Object(m) = json_val {
+            context_map = m;
+        }
+    }
+    context_map.insert("csrf_token".to_string(), serde_json::Value::String(session.csrf_token()));
+
+    let rendered = template.render(serde_json::Value::Object(context_map.clone()))
+        .map_err(|e| format!("View Render Error: {}", e))?;
+
+    // Check if layout exists
+    let layout_path = resolve_layout(root_dir, None);
+    if !rendered.contains("<!DOCTYPE html>") && layout_path.is_some() {
+        if let Some(lpath) = layout_path {
+            if let Ok(layout_str) = std::fs::read_to_string(&lpath) {
+                let (_, layout_tmpl) = parse_titanium_file(&layout_str, false);
+                if let Some(ltmpl) = layout_tmpl {
+                    let mut l_env = Environment::new();
+                    add_custom_filters(&mut l_env);
+                    let l_src = ltmpl.replace("<slot />", "{{ content | safe }}").replace("<slot></slot>", "{{ content | safe }}");
+                    l_env.add_template("layout", &l_src).map_err(|e| format!("Layout Syntax Error: {}", e))?;
+                    let layout_compiled = l_env.get_template("layout").map_err(|e| e.to_string())?;
+                    context_map.insert("content".to_string(), serde_json::Value::String(rendered.clone()));
+                    return layout_compiled.render(serde_json::Value::Object(context_map)).map_err(|e| format!("Layout Render Error: {}", e));
+                }
+            }
+        }
+    }
+
+    Ok(rendered)
+}
+

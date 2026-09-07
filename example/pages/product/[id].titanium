@@ -184,7 +184,7 @@ let flash_msg = session.flash("msg");
       </div>
 
       <!-- Related Products Grid -->
-      {% if related.len() > 0 %}
+      {% if related | length > 0 %}
         <section class="mt-16 pt-12 border-t border-white/5">
           <h3 class="text-xl font-bold text-white mb-6">Related Titanium Equipment</h3>
           <div class="grid grid-cols-1 sm:grid-cols-3 gap-6">

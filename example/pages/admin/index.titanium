@@ -201,7 +201,7 @@ let flash_msg = session.flash("msg");
       <div class="lg:col-span-4 glass-panel p-6 rounded-2xl space-y-4">
         <h2 class="text-base font-bold text-white pb-3 border-b border-white/10 flex items-center justify-between">
           <span>⚠️ Inventory Watch</span>
-          <span class="text-xs text-amber-400 font-mono">{{ low_stock_items.len() }} low</span>
+          <span class="text-xs text-amber-400 font-mono">{{ low_stock_items | length }} low</span>
         </h2>
 
         <div class="space-y-3">

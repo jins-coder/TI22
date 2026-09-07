@@ -129,11 +129,11 @@ let flash_err = session.flash("err");
         <p class="text-xs text-slate-400 mt-1">Zero-reload Turbo SPA cart management</p>
       </div>
       <span class="text-xs font-mono px-3 py-1 bg-sky-500/10 text-sky-400 border border-sky-500/20 rounded-full font-bold">
-        {{ cart_items.len() }} Item(s)
+        {{ cart_items | length }} Item(s)
       </span>
     </div>
 
-    {% if cart_items.len() > 0 %}
+    {% if cart_items | length > 0 %}
       <div class="grid grid-cols-1 lg:grid-cols-12 gap-8">
         
         <!-- Cart Line Items List -->

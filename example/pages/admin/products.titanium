@@ -177,7 +177,7 @@ let flash_msg = session.flash("msg");
       <!-- Right Column: Products Table -->
       <div class="lg:col-span-8 glass-panel p-6 rounded-2xl space-y-4">
         <div class="flex items-center justify-between pb-3 border-b border-white/10">
-          <h2 class="text-base font-bold text-white">All Products ({{ products.len() }})</h2>
+          <h2 class="text-base font-bold text-white">All Products ({{ products | length }})</h2>
         </div>
 
         <div class="overflow-x-auto">

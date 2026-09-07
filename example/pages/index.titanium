@@ -189,7 +189,7 @@ let flash_msg = session.flash("msg");
     <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-4 pb-6 border-b border-white/5">
       <div>
         <h2 class="text-2xl font-bold text-white tracking-tight">Product Catalog</h2>
-        <p class="text-xs text-slate-400 mt-1">Showing {{ products.len() }} precision titanium items</p>
+        <p class="text-xs text-slate-400 mt-1">Showing {{ products | length }} precision titanium items</p>
       </div>
 
       <!-- Categories Filter Tabs -->

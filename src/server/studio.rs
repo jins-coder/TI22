@@ -2,7 +2,7 @@ pub const STUDIO_HTML: &str = r#"<!DOCTYPE html>
 <html lang="en">
 <head>
   <meta charset="UTF-8">
-  <title>Titanium Web Studio (Ti22)</title>
+  <title>Titanium Web Studio (Ti22) v7.0.0</title>
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;600;700;800&family=JetBrains+Mono:wght@400;600&display=swap">
   <style>
@@ -21,7 +21,7 @@ pub const STUDIO_HTML: &str = r#"<!DOCTYPE html>
     body { font-family: 'Plus Jakarta Sans', sans-serif; background: var(--bg); color: var(--text); display: flex; height: 100vh; overflow: hidden; }
     
     /* Sidebar */
-    .sidebar { width: 260px; background: var(--card); border-right: 1px solid var(--card-border); display: flex; flex-direction: column; padding: 24px 16px; }
+    .sidebar { width: 260px; background: var(--card); border-right: 1px solid var(--card-border); display: flex; flex-direction: column; padding: 24px 16px; shrink: 0; }
     .brand { display: flex; align-items: center; gap: 10px; font-weight: 800; font-size: 18px; color: var(--primary); margin-bottom: 28px; }
     .nav-item { display: flex; align-items: center; gap: 10px; padding: 12px 14px; border-radius: 8px; color: var(--muted); cursor: pointer; font-weight: 600; font-size: 14px; transition: all 0.2s; margin-bottom: 4px; }
     .nav-item:hover, .nav-item.active { background: rgba(56, 189, 248, 0.1); color: var(--primary); }
@@ -50,6 +50,7 @@ pub const STUDIO_HTML: &str = r#"<!DOCTYPE html>
     textarea.sql-input:focus { outline: none; border-color: var(--primary); }
     .btn { background: var(--primary); color: #000; font-weight: 700; padding: 10px 20px; border-radius: 8px; border: none; cursor: pointer; align-self: flex-start; transition: all 0.2s; }
     .btn:hover { opacity: 0.9; transform: translateY(-1px); }
+    .btn-secondary { background: rgba(255,255,255,0.08); color: var(--text); border: 1px solid var(--card-border); }
     
     /* Tables */
     .table-container { overflow-x: auto; margin-top: 16px; }
@@ -68,12 +69,12 @@ pub const STUDIO_HTML: &str = r#"<!DOCTYPE html>
       <span>Titanium Studio</span>
     </div>
     <div class="nav-item active" onclick="switchTab('overview', this)">📊 Overview & Metrics</div>
-    <div class="nav-item" onclick="switchTab('database', this)">🗄️ Database Explorer</div>
+    <div class="nav-item" onclick="switchTab('database', this)">🗄️ Database Manager</div>
     <div class="nav-item" onclick="switchTab('sql', this)">⚡ SQL Console</div>
     <div class="nav-item" onclick="switchTab('routes', this)">🧭 Route Map</div>
     <div class="status-badge">
       <span>●</span>
-      <span>Runtime: Active WAL</span>
+      <span>v7.0.0 Dual Engine</span>
     </div>
   </div>
 
@@ -83,30 +84,30 @@ pub const STUDIO_HTML: &str = r#"<!DOCTYPE html>
       <div class="header">
         <div>
           <h1>Engine Overview</h1>
-          <p class="subtitle">Real-time telemetry and resource usage of Titanium native binary.</p>
+          <p class="subtitle">Titanium v7.0.0 (Ti22) Dual Engine Architecture — Single-File SFC + Enterprise MVC.</p>
         </div>
       </div>
       <div class="grid">
         <div class="stat-card">
-          <div class="stat-lbl">ENGINE STATUS</div>
-          <div class="stat-val">100%</div>
-          <div style="color:var(--success); font-size:12px; font-weight:700;">● Online & Serving</div>
+          <div class="stat-lbl">ENGINE ARCHITECTURE</div>
+          <div class="stat-val">Dual</div>
+          <div style="color:var(--success); font-size:12px; font-weight:700;">● SFC + Enterprise MVC</div>
         </div>
         <div class="stat-card">
           <div class="stat-lbl">STORAGE ENGINE</div>
           <div class="stat-val" style="color:var(--accent);">SQLite WAL</div>
-          <div style="color:var(--muted); font-size:12px;">High Concurrent Mode</div>
+          <div style="color:var(--muted); font-size:12px;">ActiveRecord ORM Active</div>
         </div>
         <div class="stat-card">
           <div class="stat-lbl">SPA ROUTING</div>
           <div class="stat-val" style="color:#10b981;">Turbo Native</div>
-          <div style="color:var(--muted); font-size:12px;">Zero Reloads</div>
+          <div style="color:var(--muted); font-size:12px;">Zero Reloads • Soft DOM</div>
         </div>
       </div>
       <div class="card">
         <h3 style="margin-bottom:12px;">⚡ Platform Capabilities</h3>
         <p style="color:var(--muted); font-size:14px; line-height:1.6;">
-          Titanium (Ti22) is running in native threadpool execution mode. Dynamic file-system routing, Server-Sent Events, encrypted session stores, rate limiting, and soft-DOM live reload are active.
+          Titanium v7.0.0 executes both file-based single-file components (<code>pages/</code>) and domain-driven MVC controllers (<code>app/controllers/</code>, <code>app/models/</code>, <code>app/views/</code>) simultaneously on a high-throughput multi-threaded Rust execution pipeline.
         </p>
       </div>
     </div>
@@ -115,12 +116,12 @@ pub const STUDIO_HTML: &str = r#"<!DOCTYPE html>
     <div id="tab-database" class="tab-pane">
       <div class="header">
         <div>
-          <h1>Database Explorer</h1>
-          <p class="subtitle">Inspect SQLite tables and schemas.</p>
+          <h1>Database Manager</h1>
+          <p class="subtitle">Inspect tables, view schemas, and query SQLite records in real-time.</p>
         </div>
       </div>
       <div class="card">
-        <h3 style="margin-bottom:16px;">Discovered Tables</h3>
+        <h3 style="margin-bottom:16px;">SQLite Database Tables</h3>
         <div id="tables-list">Loading tables...</div>
       </div>
     </div>
@@ -135,8 +136,12 @@ pub const STUDIO_HTML: &str = r#"<!DOCTYPE html>
       </div>
       <div class="card">
         <div class="editor-wrapper">
-          <textarea id="sql-query" class="sql-input" placeholder="SELECT * FROM users LIMIT 10;"></textarea>
-          <button class="btn" onclick="runSql()">Execute Query</button>
+          <textarea id="sql-query" class="sql-input" placeholder="SELECT * FROM products LIMIT 10;"></textarea>
+          <div style="display:flex; gap:10px;">
+            <button class="btn" onclick="runSql()">Execute Query</button>
+            <button class="btn btn-secondary" onclick="document.getElementById('sql-query').value='SELECT * FROM products;'; runSql();">Products</button>
+            <button class="btn btn-secondary" onclick="document.getElementById('sql-query').value='SELECT * FROM orders;'; runSql();">Orders</button>
+          </div>
         </div>
         <div class="table-container" id="query-results" style="margin-top:20px;"></div>
       </div>
@@ -174,7 +179,7 @@ pub const STUDIO_HTML: &str = r#"<!DOCTYPE html>
         if (data.tables && data.tables.length > 0) {
           let html = '<table class="data-table"><thead><tr><th>Table Name</th><th>Type</th><th>Actions</th></tr></thead><tbody>';
           data.tables.forEach(t => {
-            html += `<tr><td><strong>${t.name}</strong></td><td><span class="tag">${t.type}</span></td><td><button class="btn" style="padding:4px 10px; font-size:11px;" onclick="queryTable('${t.name}')">Browse Data</button></td></tr>`;
+            html += `<tr><td><strong>${t.name}</strong></td><td><span class="tag">${t.type}</span></td><td><button class="btn" style="padding:4px 10px; font-size:11px;" onclick="queryTable('${t.name}')">Browse Records</button></td></tr>`;
           });
           html += '</tbody></table>';
           target.innerHTML = html;
@@ -229,7 +234,22 @@ pub const STUDIO_HTML: &str = r#"<!DOCTYPE html>
 
     async function loadRoutes() {
       const target = document.getElementById('routes-list');
-      target.innerHTML = '<table class="data-table"><thead><tr><th>Route Path</th><th>Type</th></tr></thead><tbody><tr><td><code>/</code></td><td><span class="tag">SSR Page</span></td></tr><tr><td><code>/nextgen</code></td><td><span class="tag">Omniverse Showcase</span></td></tr><tr><td><code>/php_features</code></td><td><span class="tag">Modern Primitives</span></td></tr><tr><td><code>/api/users</code></td><td><span class="tag">REST JSON API</span></td></tr></tbody></table>';
+      try {
+        const res = await fetch('/__titanium_studio/api/routes');
+        const data = await res.json();
+        if (data.routes && data.routes.length > 0) {
+          let html = '<table class="data-table"><thead><tr><th>Route Pattern</th><th>File Path</th><th>Type</th></tr></thead><tbody>';
+          data.routes.forEach(r => {
+            html += `<tr><td><code style="color:var(--primary); font-weight:700;">${r.pattern}</code></td><td style="color:var(--muted); font-size:12px;">${r.file}</td><td><span class="tag">${r.is_dynamic ? 'Dynamic Route' : 'Static Route'}</span></td></tr>`;
+          });
+          html += '</tbody></table>';
+          target.innerHTML = html;
+        } else {
+          target.innerHTML = '<p style="color:var(--muted)">No routes detected.</p>';
+        }
+      } catch (e) {
+        target.innerHTML = '<p style="color:var(--danger)">Failed to fetch routes.</p>';
+      }
     }
 
     loadTables();

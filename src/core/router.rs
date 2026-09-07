@@ -7,6 +7,7 @@ pub struct Route {
     pub segments: Vec<Segment>,
     pub file_path: PathBuf,
     pub is_api: bool,
+    pub is_dynamic: bool,
 }
 
 #[derive(Clone, Debug, PartialEq)]
@@ -17,7 +18,7 @@ pub enum Segment {
 
 #[derive(Clone, Default)]
 pub struct Router {
-    routes: Vec<Route>,
+    pub routes: Vec<Route>,
 }
 
 impl Router {
@@ -95,11 +96,14 @@ impl Router {
             }
         }
 
+        let is_dynamic = segments.iter().any(|s| matches!(s, Segment::Param(_)));
+
         self.routes.push(Route {
             pattern: route_str,
             segments,
             file_path: file_path.to_path_buf(),
             is_api,
+            is_dynamic,
         });
     }
 

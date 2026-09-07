@@ -224,7 +224,7 @@ pub fn run_server(config: ServerConfig) -> Result<(), Box<dyn std::error::Error>
         std::process::exit(0);
     });
 
-    println!("\n  ⚡ Titanium (Ti22) Native Engine v6.0.0 (Omniverse) ready on http://{}\n", addr);
+    println!("\n  ⚡ Titanium (Ti22) Native Engine v7.0.0 (Dual Engine) ready on http://{}\n", addr);
     println!("  🎨 Titanium Web Studio GUI accessible at: http://{}/__titanium_studio\n", addr);
 
     let root_dir = config.root_dir.clone();
@@ -404,7 +404,7 @@ pub fn run_server(config: ServerConfig) -> Result<(), Box<dyn std::error::Error>
                     continue;
                 }
 
-                // Titanium v6.0.0 Studio API: PubSub Topics Inspector
+                // Titanium v7.0.0 Studio API: PubSub Topics Inspector
                 if path == "/__titanium_studio/api/pubsub" {
                     let topics = pubsub.list_topics();
                     let topics_json = rhai::serde::from_dynamic::<serde_json::Value>(&Dynamic::from(topics)).unwrap_or_else(|_| serde_json::json!([]));
@@ -416,9 +416,27 @@ pub fn run_server(config: ServerConfig) -> Result<(), Box<dyn std::error::Error>
                     continue;
                 }
 
+                // Titanium v7.0.0 Studio API: Dynamic Route Map
+                if path == "/__titanium_studio/api/routes" {
+                    let r = router.lock().unwrap();
+                    let routes_list: Vec<serde_json::Value> = r.routes.iter().map(|rt| {
+                        serde_json::json!({
+                            "pattern": rt.pattern,
+                            "file": rt.file_path.display().to_string(),
+                            "is_dynamic": rt.is_dynamic
+                        })
+                    }).collect();
+                    let body = serde_json::json!({ "routes": routes_list }).to_string();
+                    let resp = Response::from_string(body)
+                        .with_status_code(200)
+                        .with_header(Header::from_bytes(&b"Content-Type"[..], &b"application/json"[..]).unwrap());
+                    let _ = req.respond(resp);
+                    continue;
+                }
+
                 // Titanium Diagnostics Health Endpoint
                 if path == "/__titanium_health" {
-                    let body = r#"{"status":"healthy","version":"6.0.0","engine":"Titanium (Ti22) Omniverse","sqlite":"WAL","cache":true,"queue":true,"pubsub":true,"vector":true,"media":true}"#;
+                    let body = r#"{"status":"healthy","version":"7.0.0","engine":"Titanium (Ti22) Dual Engine","sqlite":"WAL","orm":true,"mvc":true,"cache":true,"queue":true,"pubsub":true,"vector":true,"media":true}"#;
                     let resp = Response::from_string(body)
                         .with_status_code(200)
                         .with_header(Header::from_bytes(&b"Content-Type"[..], &b"application/json"[..]).unwrap());
@@ -624,6 +642,9 @@ pub fn run_server(config: ServerConfig) -> Result<(), Box<dyn std::error::Error>
                         Some(bytes.len()),
                         None,
                     ),
+                    Ok(TitaniumResponse::View { status, view, .. }) => Response::from_string(format!("View template: {}", view))
+                        .with_status_code(status)
+                        .with_header(Header::from_bytes(&b"Content-Type"[..], &b"text/html; charset=utf-8"[..]).unwrap()),
                     Err(err_msg) => {
                         let formatted_err = format!(
                             r#"<!DOCTYPE html>
