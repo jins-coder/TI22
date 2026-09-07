@@ -550,29 +550,35 @@ pub fn run_server(config: ServerConfig) -> Result<(), Box<dyn std::error::Error>
                     }
                 };
 
-                if let Ok(Some(early_resp)) = engine.run_middleware(&middleware_path, &titanium_req, &session_handle) {
-                    let mut http_resp = match early_resp {
-                        TitaniumResponse::Redirect { status, location } => Response::from_string(format!("Redirecting to {}", location))
-                            .with_status_code(status)
-                            .with_header(Header::from_bytes(&b"Location"[..], location.as_bytes()).unwrap()),
-                        TitaniumResponse::Json { status, data } => {
-                            let json_val = rhai::serde::from_dynamic::<serde_json::Value>(&data).unwrap_or(serde_json::json!({}));
-                            Response::from_string(json_val.to_string())
+                match engine.run_middleware(&middleware_path, &titanium_req, &session_handle) {
+                    Ok(Some(early_resp)) => {
+                        let mut http_resp = match early_resp {
+                            TitaniumResponse::Redirect { status, location } => Response::from_string(format!("Redirecting to {}", location))
                                 .with_status_code(status)
-                                .with_header(Header::from_bytes(&b"Content-Type"[..], &b"application/json"[..]).unwrap())
-                        }
-                        TitaniumResponse::Html { status, body } => Response::from_string(body)
-                            .with_status_code(status)
-                            .with_header(Header::from_bytes(&b"Content-Type"[..], &b"text/html; charset=utf-8"[..]).unwrap()),
-                        _ => Response::from_string("OK").with_status_code(200),
-                    };
+                                .with_header(Header::from_bytes(&b"Location"[..], location.as_bytes()).unwrap()),
+                            TitaniumResponse::Json { status, data } => {
+                                let json_val = rhai::serde::from_dynamic::<serde_json::Value>(&data).unwrap_or(serde_json::json!({}));
+                                Response::from_string(json_val.to_string())
+                                    .with_status_code(status)
+                                    .with_header(Header::from_bytes(&b"Content-Type"[..], &b"application/json"[..]).unwrap())
+                            }
+                            TitaniumResponse::Html { status, body } => Response::from_string(body)
+                                .with_status_code(status)
+                                .with_header(Header::from_bytes(&b"Content-Type"[..], &b"text/html; charset=utf-8"[..]).unwrap()),
+                            _ => Response::from_string("OK").with_status_code(200),
+                        };
 
-                    if is_new_session {
-                        let cookie_val = format!("titanium_session={}; Path=/; HttpOnly; SameSite=Lax", sid);
-                        http_resp.add_header(Header::from_bytes(&b"Set-Cookie"[..], cookie_val.as_bytes()).unwrap());
+                        if is_new_session {
+                            let cookie_val = format!("titanium_session={}; Path=/; HttpOnly; SameSite=Lax", sid);
+                            http_resp.add_header(Header::from_bytes(&b"Set-Cookie"[..], cookie_val.as_bytes()).unwrap());
+                        }
+                        let _ = req.respond(http_resp);
+                        continue;
                     }
-                    let _ = req.respond(http_resp);
-                    continue;
+                    Err(err) => {
+                        eprintln!("  ⚠️ Middleware error in {}: {}", middleware_path.display(), err);
+                    }
+                    _ => {}
                 }
 
                 // 6. Render component via Engine
