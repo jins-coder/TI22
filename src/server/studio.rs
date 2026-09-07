@@ -75,6 +75,7 @@ pub const STUDIO_HTML: &str = r#"<!DOCTYPE html>
       <span>Titanium Studio</span>
     </div>
     <div class="nav-item active" onclick="switchTab('overview', this)">📊 Overview & Metrics</div>
+    <div class="nav-item" onclick="switchTab('cluster', this)">🌐 Supercluster Mesh</div>
     <div class="nav-item" onclick="switchTab('ai', this)">🧠 AI Playground & RAG</div>
     <div class="nav-item" onclick="switchTab('realtime', this)">📡 Live WebSockets</div>
     <div class="nav-item" onclick="switchTab('database', this)">🗄️ Database Manager</div>
@@ -82,7 +83,7 @@ pub const STUDIO_HTML: &str = r#"<!DOCTYPE html>
     <div class="nav-item" onclick="switchTab('routes', this)">🧭 Route Map</div>
     <div class="status-badge">
       <span>●</span>
-      <span>v9.0.0 Singularity AI</span>
+      <span>v10.0.0 Titanium X</span>
     </div>
   </div>
 
@@ -117,6 +118,54 @@ pub const STUDIO_HTML: &str = r#"<!DOCTYPE html>
         <p style="color:var(--muted); font-size:14px; line-height:1.6;">
           Titanium v8.0.0 integrates native real-time WebSockets and bi-directional live topic broadcasting directly into the multi-threaded Rust execution pipeline alongside single-file components and domain-driven MVC architecture.
         </p>
+      </div>
+    </div>
+
+    <!-- SUPERCLUSTER TAB -->
+    <div id="tab-cluster" class="tab-pane">
+      <div class="header">
+        <div>
+          <h1>Supercluster Mesh & Node Topology</h1>
+          <p class="subtitle">Distributed Primary-Replica nodes, SQLite WAL sync, and cluster heartbeats.</p>
+        </div>
+      </div>
+
+      <div class="grid">
+        <div class="stat-card">
+          <div class="stat-lbl">PRIMARY NODE</div>
+          <div class="stat-val" id="cluster-primary-id" style="color:var(--primary); font-size:20px;">Primary</div>
+          <div style="color:var(--success); font-size:12px; font-weight:700;">● Mesh Leader Active</div>
+        </div>
+        <div class="stat-card">
+          <div class="stat-lbl">DISCOVERED NODES</div>
+          <div class="stat-val" id="cluster-nodes-count" style="color:var(--accent);">1</div>
+          <div style="color:var(--muted); font-size:12px;">Active Mesh Participants</div>
+        </div>
+        <div class="stat-card">
+          <div class="stat-lbl">DISTRIBUTED REPLICATION</div>
+          <div class="stat-val" style="color:var(--success); font-size:20px;">SQLite WAL</div>
+          <div style="color:var(--muted); font-size:12px;">Real-time transaction broadcasting</div>
+        </div>
+      </div>
+
+      <div class="card">
+        <h3 style="margin-bottom:16px;">🌐 Active Cluster Node Topology</h3>
+        <div id="cluster-nodes-table">Loading cluster topology...</div>
+      </div>
+
+      <div class="card">
+        <h3 style="margin-bottom:16px;">⚡ Cross-Node Distributed Broadcast</h3>
+        <div style="display:grid; grid-template-columns: 1fr 2fr; gap:12px; margin-bottom:12px;">
+          <div>
+            <label style="font-size:12px; color:var(--muted); display:block; margin-bottom:6px; font-weight:700;">Sync Event Type</label>
+            <input id="cluster-sync-type" value="wal_commit" style="width:100%; background:#050811; border:1px solid var(--card-border); padding:10px; border-radius:8px; color:#fff; font-family:'JetBrains Mono'; font-size:13px;" />
+          </div>
+          <div>
+            <label style="font-size:12px; color:var(--muted); display:block; margin-bottom:6px; font-weight:700;">Sync Payload</label>
+            <input id="cluster-sync-payload" value='{"table": "products", "action": "replicate", "version": 10}' style="width:100%; background:#050811; border:1px solid var(--card-border); padding:10px; border-radius:8px; color:#38bdf8; font-family:'JetBrains Mono'; font-size:13px;" />
+          </div>
+        </div>
+        <button class="btn" onclick="syncClusterWal()">Dispatch Cluster Sync</button>
       </div>
     </div>
 
@@ -272,6 +321,7 @@ pub const STUDIO_HTML: &str = r#"<!DOCTYPE html>
       document.querySelectorAll('.nav-item').forEach(i => i.classList.remove('active'));
       document.getElementById('tab-' + name).classList.add('active');
       el.classList.add('active');
+      if (name === 'cluster') loadCluster();
       if (name === 'database') loadTables();
       if (name === 'routes') loadRoutes();
       if (name === 'realtime') loadWsStats();
@@ -467,6 +517,55 @@ pub const STUDIO_HTML: &str = r#"<!DOCTYPE html>
         }
       } catch (err) {
         out.textContent = `RAG Error: ${err.message}`;
+      }
+    }
+
+    async function loadCluster() {
+      const target = document.getElementById('cluster-nodes-table');
+      try {
+        const res = await fetch('/__titanium_cluster/nodes');
+        const data = await res.json();
+        document.getElementById('cluster-primary-id').textContent = (data.node_id || 'Primary');
+        document.getElementById('cluster-nodes-count').textContent = (data.nodes || []).length;
+
+        if (data.nodes && data.nodes.length > 0) {
+          let html = '<table class="data-table"><thead><tr><th>Node ID</th><th>Bind Address</th><th>Role</th><th>Status</th><th>Latency</th></tr></thead><tbody>';
+          data.nodes.forEach(n => {
+            const roleBadge = n.role === 'primary' ? '<span class="tag tag-success">Primary Leader</span>' : '<span class="tag tag-accent">Replica</span>';
+            const statusBadge = n.status === 'healthy' ? '<span style="color:var(--success); font-weight:700;">● Healthy</span>' : '<span style="color:var(--danger); font-weight:700;">● Degraded</span>';
+            html += `<tr><td><strong>${n.id}</strong></td><td><code style="color:var(--primary);">${n.address}</code></td><td>${roleBadge}</td><td>${statusBadge}</td><td><span style="font-family:JetBrains Mono; color:var(--muted);">${n.latency_ms}ms</span></td></tr>`;
+          });
+          html += '</tbody></table>';
+          target.innerHTML = html;
+        } else {
+          target.innerHTML = '<p style="color:var(--muted)">No nodes registered in cluster.</p>';
+        }
+      } catch (e) {
+        target.innerHTML = `<p style="color:var(--danger);">Error loading cluster topology: ${e.message}</p>`;
+      }
+    }
+
+    async function syncClusterWal() {
+      const event_type = document.getElementById('cluster-sync-type').value;
+      const rawPayload = document.getElementById('cluster-sync-payload').value;
+      let payload = rawPayload;
+      try { payload = JSON.parse(rawPayload); } catch (_) {}
+
+      try {
+        const res = await fetch('/__titanium_cluster/sync', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ event_type, payload })
+        });
+        const data = await res.json();
+        if (data.success) {
+          alert(`✅ Broadcasted sync [${data.sync_id}] across Supercluster nodes!`);
+          loadCluster();
+        } else {
+          alert('Sync failed: ' + data.error);
+        }
+      } catch (e) {
+        alert('Sync error: ' + e.message);
       }
     }
 

@@ -1,6 +1,6 @@
 use crate::core::context::{TitaniumRequest, TitaniumResponse};
 use crate::core::session::SessionHandle;
-use crate::services::{AiEngine, JobQueue, MediaUtils, PubSubHub, VectorEngine, WebSocketHub};
+use crate::services::{AiEngine, ClusterMesh, JobQueue, MediaUtils, PubSubHub, VectorEngine, WebSocketHub};
 use crate::storage::{CacheStore, Database, ModelDef, QueryBuilder};
 use minijinja::{Environment, Value};
 use rhai::{Array, Dynamic, Engine, Map, Scope, AST};
@@ -20,6 +20,7 @@ pub struct TitaniumEngine {
     ws: WebSocketHub,
     ai: AiEngine,
     vector: VectorEngine,
+    cluster: ClusterMesh,
     rhai_engine: Arc<Engine>,
     ast_cache: Arc<Mutex<HashMap<String, AST>>>,
     rate_limiter: Arc<Mutex<HashMap<String, Vec<u64>>>>,
@@ -34,6 +35,7 @@ impl TitaniumEngine {
         ws: WebSocketHub,
         ai: AiEngine,
         vector: VectorEngine,
+        cluster: ClusterMesh,
     ) -> Self {
         let mut engine = Engine::new();
         let rate_limiter = Arc::new(Mutex::new(HashMap::new()));
@@ -797,6 +799,48 @@ impl TitaniumEngine {
             arr
         });
 
+        // ==========================================
+        // Supercluster Multi-Node Mesh (v10.0.0 Titanium X)
+        // ==========================================
+        let cl_c1 = cluster.clone();
+        engine.register_fn("cluster_node_id", move || -> String {
+            cl_c1.node_id()
+        });
+
+        let cl_c2 = cluster.clone();
+        engine.register_fn("cluster_is_primary", move || -> bool {
+            cl_c2.is_primary()
+        });
+
+        let cl_c3 = cluster.clone();
+        engine.register_fn("cluster_nodes", move || -> Array {
+            let mut arr = Array::new();
+            for n in cl_c3.nodes_list() {
+                let mut m = Map::new();
+                m.insert("id".into(), Dynamic::from(n.id));
+                m.insert("address".into(), Dynamic::from(n.address));
+                m.insert("role".into(), Dynamic::from(n.role));
+                m.insert("status".into(), Dynamic::from(n.status));
+                m.insert("latency_ms".into(), Dynamic::from(n.latency_ms as i64));
+                arr.push(Dynamic::from(m));
+            }
+            arr
+        });
+
+        let cl_c4 = cluster.clone();
+        let ws_cl = ws.clone();
+        engine.register_fn("cluster_broadcast", move |event_type: &str, payload: Dynamic| -> Dynamic {
+            let json_val = rhai::serde::from_dynamic::<serde_json::Value>(&payload).unwrap_or(serde_json::Value::Null);
+            let msg = cl_c4.record_sync(event_type, json_val.clone());
+            ws_cl.broadcast_dynamic("cluster", payload);
+            rhai::serde::to_dynamic(&msg).unwrap_or(Dynamic::UNIT)
+        });
+
+        let cl_c5 = cluster.clone();
+        engine.register_fn("cluster_stats", move || -> Map {
+            cl_c5.stats_map()
+        });
+
         Self {
             db,
             cache,
@@ -805,6 +849,7 @@ impl TitaniumEngine {
             ws,
             ai,
             vector,
+            cluster,
             rhai_engine: Arc::new(engine),
             ast_cache: Arc::new(Mutex::new(HashMap::new())),
             rate_limiter,

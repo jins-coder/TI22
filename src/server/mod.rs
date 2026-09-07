@@ -6,6 +6,7 @@ use crate::core::router::Router;
 use crate::core::session::SessionStore;
 use crate::server::studio::STUDIO_HTML;
 use crate::services::ai::AiEngine;
+use crate::services::cluster::{ClusterMesh, ClusterNode};
 use crate::services::pubsub::PubSubHub;
 use crate::services::queue::JobQueue;
 use crate::services::vector::VectorEngine;
@@ -450,6 +451,7 @@ pub fn run_server(config: ServerConfig) -> Result<(), Box<dyn std::error::Error>
     let ws = WebSocketHub::new();
     let ai = AiEngine::new();
     let vector = VectorEngine::new();
+    let cluster = ClusterMesh::new("titanium-primary-node-01", &addr, true);
 
     let engine = TitaniumEngine::new(
         db.clone(),
@@ -459,6 +461,7 @@ pub fn run_server(config: ServerConfig) -> Result<(), Box<dyn std::error::Error>
         ws.clone(),
         ai.clone(),
         vector.clone(),
+        cluster.clone(),
     );
     let session_store = SessionStore::new();
 
@@ -477,6 +480,7 @@ pub fn run_server(config: ServerConfig) -> Result<(), Box<dyn std::error::Error>
     let ws_arc = Arc::new(ws);
     let ai_arc = Arc::new(ai);
     let vector_arc = Arc::new(vector);
+    let cluster_arc = Arc::new(cluster);
 
     let num_threads = if config.workers == 0 { 4 } else { config.workers };
     let mut handles = Vec::new();
@@ -493,6 +497,7 @@ pub fn run_server(config: ServerConfig) -> Result<(), Box<dyn std::error::Error>
         let ws = Arc::clone(&ws_arc);
         let ai = Arc::clone(&ai_arc);
         let vector = Arc::clone(&vector_arc);
+        let cluster = Arc::clone(&cluster_arc);
         let root_dir = root_dir.clone();
         let public_dir = public_dir.clone();
         let pages_dir = pages_dir.clone();
@@ -799,6 +804,71 @@ pub fn run_server(config: ServerConfig) -> Result<(), Box<dyn std::error::Error>
                         Err(e) => serde_json::json!({ "success": false, "error": e.to_string() }),
                     };
                     let resp = Response::from_string(res_json.to_string())
+                        .with_status_code(200)
+                        .with_header(Header::from_bytes(&b"Content-Type"[..], &b"application/json"[..]).unwrap());
+                    let _ = req.respond(resp);
+                    continue;
+                }
+
+                // Titanium v10.0.0 Supercluster: Node Topology & Discovered Mesh
+                if path == "/__titanium_cluster/nodes" || path == "/__titanium_studio/api/cluster/nodes" {
+                    let nodes = cluster.nodes_list();
+                    let resp = Response::from_string(serde_json::json!({
+                        "node_id": cluster.node_id(),
+                        "is_primary": cluster.is_primary(),
+                        "nodes": nodes,
+                        "version": "10.0.0"
+                    }).to_string())
+                        .with_status_code(200)
+                        .with_header(Header::from_bytes(&b"Content-Type"[..], &b"application/json"[..]).unwrap());
+                    let _ = req.respond(resp);
+                    continue;
+                }
+
+                // Titanium v10.0.0 Supercluster: Heartbeat Ping Registration
+                if path == "/__titanium_cluster/heartbeat" {
+                    let mut body_bytes = Vec::new();
+                    let _ = req.as_reader().read_to_end(&mut body_bytes);
+                    let res_json = match serde_json::from_slice::<ClusterNode>(&body_bytes) {
+                        Ok(node) => {
+                            cluster.register_heartbeat(node);
+                            serde_json::json!({ "success": true, "status": "registered", "primary_node": cluster.node_id() })
+                        }
+                        Err(e) => serde_json::json!({ "success": false, "error": e.to_string() }),
+                    };
+                    let resp = Response::from_string(res_json.to_string())
+                        .with_status_code(200)
+                        .with_header(Header::from_bytes(&b"Content-Type"[..], &b"application/json"[..]).unwrap());
+                    let _ = req.respond(resp);
+                    continue;
+                }
+
+                // Titanium v10.0.0 Supercluster: Distributed WAL & State Sync
+                if path == "/__titanium_cluster/sync" {
+                    let mut body_bytes = Vec::new();
+                    let _ = req.as_reader().read_to_end(&mut body_bytes);
+                    let res_json = match serde_json::from_slice::<serde_json::Value>(&body_bytes) {
+                        Ok(val) => {
+                            let event_type = val["event_type"].as_str().unwrap_or("wal_sync");
+                            let payload = val.get("payload").cloned().unwrap_or(serde_json::Value::Null);
+                            let msg = cluster.record_sync(event_type, payload);
+                            ws.broadcast("cluster", serde_json::to_value(&msg).unwrap_or(serde_json::Value::Null));
+                            serde_json::json!({ "success": true, "sync_id": msg.id })
+                        }
+                        Err(e) => serde_json::json!({ "success": false, "error": e.to_string() }),
+                    };
+                    let resp = Response::from_string(res_json.to_string())
+                        .with_status_code(200)
+                        .with_header(Header::from_bytes(&b"Content-Type"[..], &b"application/json"[..]).unwrap());
+                    let _ = req.respond(resp);
+                    continue;
+                }
+
+                // Titanium v10.0.0 Supercluster Stats
+                if path == "/__titanium_cluster/stats" || path == "/__titanium_studio/api/cluster" {
+                    let dyn_stats = Dynamic::from(cluster.stats_map());
+                    let json_val = rhai::serde::from_dynamic::<serde_json::Value>(&dyn_stats).unwrap_or(serde_json::json!({}));
+                    let resp = Response::from_string(json_val.to_string())
                         .with_status_code(200)
                         .with_header(Header::from_bytes(&b"Content-Type"[..], &b"application/json"[..]).unwrap());
                     let _ = req.respond(resp);
