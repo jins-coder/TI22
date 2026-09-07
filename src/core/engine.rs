@@ -1,6 +1,6 @@
 use crate::core::context::{TitaniumRequest, TitaniumResponse};
 use crate::core::session::SessionHandle;
-use crate::services::{JobQueue, MediaUtils, PubSubHub, VectorEngine, WebSocketHub};
+use crate::services::{AiEngine, JobQueue, MediaUtils, PubSubHub, VectorEngine, WebSocketHub};
 use crate::storage::{CacheStore, Database, ModelDef, QueryBuilder};
 use minijinja::{Environment, Value};
 use rhai::{Array, Dynamic, Engine, Map, Scope, AST};
@@ -18,13 +18,23 @@ pub struct TitaniumEngine {
     queue: JobQueue,
     pubsub: PubSubHub,
     ws: WebSocketHub,
+    ai: AiEngine,
+    vector: VectorEngine,
     rhai_engine: Arc<Engine>,
     ast_cache: Arc<Mutex<HashMap<String, AST>>>,
     rate_limiter: Arc<Mutex<HashMap<String, Vec<u64>>>>,
 }
 
 impl TitaniumEngine {
-    pub fn new(db: Database, cache: CacheStore, queue: JobQueue, pubsub: PubSubHub, ws: WebSocketHub) -> Self {
+    pub fn new(
+        db: Database,
+        cache: CacheStore,
+        queue: JobQueue,
+        pubsub: PubSubHub,
+        ws: WebSocketHub,
+        ai: AiEngine,
+        vector: VectorEngine,
+    ) -> Self {
         let mut engine = Engine::new();
         let rate_limiter = Arc::new(Mutex::new(HashMap::new()));
 
@@ -712,12 +722,89 @@ impl TitaniumEngine {
             ws_c5.stats_map()
         });
 
+        // ==========================================
+        // Singularity AI Agentic Runtime (v9.0.0)
+        // ==========================================
+        let ai_c1 = ai.clone();
+        engine.register_fn("ai_generate", move |prompt: &str| -> String {
+            ai_c1.generate(prompt, None).unwrap_or_else(|e| format!("AI Error: {}", e))
+        });
+
+        let ai_c2 = ai.clone();
+        engine.register_fn("ai_generate", move |prompt: &str, system: &str| -> String {
+            ai_c2.generate(prompt, Some(system)).unwrap_or_else(|e| format!("AI Error: {}", e))
+        });
+
+        let ai_c3 = ai.clone();
+        engine.register_fn("ai_chat", move |prompt: &str| -> String {
+            ai_c3.generate(prompt, Some("You are the Titanium Singularity AI Assistant.")).unwrap_or_else(|e| format!("AI Error: {}", e))
+        });
+
+        let ai_c4 = ai.clone();
+        let ws_ai = ws.clone();
+        engine.register_fn("ai_stream", move |channel: &str, prompt: &str| -> i64 {
+            let chunks = ai_c4.generate_stream_chunks(prompt, None);
+            let count = chunks.len() as i64;
+            for (idx, chunk) in chunks.into_iter().enumerate() {
+                let mut data = Map::new();
+                data.insert("type".into(), Dynamic::from("token"));
+                data.insert("token".into(), Dynamic::from(chunk));
+                data.insert("index".into(), Dynamic::from(idx as i64));
+                ws_ai.broadcast_dynamic(channel, Dynamic::from(data));
+            }
+            let mut end_data = Map::new();
+            end_data.insert("type".into(), Dynamic::from("done"));
+            end_data.insert("total_tokens".into(), Dynamic::from(count));
+            ws_ai.broadcast_dynamic(channel, Dynamic::from(end_data));
+            count
+        });
+
+        let ai_c5 = ai.clone();
+        let vec_ai = vector.clone();
+        engine.register_fn("ai_rag", move |query: &str| -> Map {
+            ai_c5.rag_search_and_answer(query, &vec_ai, "documents", 3).unwrap_or_default()
+        });
+
+        let ai_c6 = ai.clone();
+        let vec_ai2 = vector.clone();
+        engine.register_fn("ai_rag", move |query: &str, collection: &str| -> Map {
+            ai_c6.rag_search_and_answer(query, &vec_ai2, collection, 3).unwrap_or_default()
+        });
+
+        let ai_c7 = ai.clone();
+        let vec_ai3 = vector.clone();
+        engine.register_fn("ai_rag", move |query: &str, collection: &str, top_k: i64| -> Map {
+            ai_c7.rag_search_and_answer(query, &vec_ai3, collection, top_k.max(1) as usize).unwrap_or_default()
+        });
+
+        let vec_u = vector.clone();
+        engine.register_fn("vector_upsert", move |collection: &str, id: &str, content: &str| {
+            vec_u.upsert(collection, id, content);
+        });
+
+        let vec_s = vector.clone();
+        engine.register_fn("vector_search", move |collection: &str, query: &str, top_k: i64| -> Array {
+            let mut arr = Array::new();
+            if let Ok(results) = vec_s.search(collection, query, top_k.max(1) as usize) {
+                for r in results {
+                    let mut item = Map::new();
+                    item.insert("id".into(), Dynamic::from(r.id));
+                    item.insert("content".into(), Dynamic::from(r.content));
+                    item.insert("score".into(), Dynamic::from(r.score));
+                    arr.push(Dynamic::from(item));
+                }
+            }
+            arr
+        });
+
         Self {
             db,
             cache,
             queue,
             pubsub,
             ws,
+            ai,
+            vector,
             rhai_engine: Arc::new(engine),
             ast_cache: Arc::new(Mutex::new(HashMap::new())),
             rate_limiter,

@@ -293,7 +293,7 @@ worker_threads = 2
 fn print_help() {
     println!(
         r#"
-  ⚡ Titanium (Ti22) — Native Web Runtime v8.0.0 (Hyperdrive)
+  ⚡ Titanium (Ti22) — Native Web Runtime v9.0.0 (Singularity AI)
   
   Usage:
     titanium dev [dir]               Start live development server

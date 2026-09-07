@@ -1,0 +1,191 @@
+---
+// AI Shopping Assistant & Catalog Advisor
+let sid = session.id();
+let products = db_query("SELECT id, name, category, price, stock, description, image_url FROM products ORDER BY id ASC LIMIT 6");
+
+// Seed vector embeddings in the background on page load
+for p in products {
+  let doc = p.name + ": " + p.category + " - $" + to_string(p.price) + ". " + p.description;
+  vector_upsert("products", to_string(p.id), doc);
+}
+---
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Singularity AI Store Copilot | TITANSTORE</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <link rel="stylesheet" href="/app.css">
+</head>
+<body class="bg-[#090d16] text-slate-100 min-h-screen flex flex-col antialiased selection:bg-sky-500 selection:text-white">
+
+  <!-- Header -->
+  <header class="border-b border-white/5 py-4 bg-slate-950/80 backdrop-blur sticky top-0 z-40">
+    <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 flex items-center justify-between">
+      <a href="/" class="flex items-center gap-2">
+        <div class="w-8 h-8 rounded-lg bg-sky-500 flex items-center justify-center text-slate-950 font-black text-sm">Ti</div>
+        <span class="font-black text-white tracking-wider">TITAN<span class="text-sky-400">STORE</span></span>
+      </a>
+      <div class="flex items-center gap-4">
+        <a href="/" class="text-xs text-slate-400 hover:text-white transition">← Back to Store</a>
+        <div class="px-3 py-1 rounded-full bg-indigo-500/10 border border-indigo-500/30 text-[11px] font-mono font-bold text-indigo-400">
+          🧠 Singularity AI v9.0.0
+        </div>
+      </div>
+    </div>
+  </header>
+
+  <!-- Main AI Agent Interface -->
+  <main class="max-w-4xl mx-auto px-4 py-8 flex-1 w-full flex flex-col gap-6">
+    
+    <div class="text-center space-y-2">
+      <div class="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-sky-500/10 border border-sky-500/30 text-sky-400 text-xs font-semibold">
+        <span>⚡ Native Streaming Agent</span>
+      </div>
+      <h1 class="text-3xl sm:text-4xl font-black text-white tracking-tight">AI Concierge & Catalog Copilot</h1>
+      <p class="text-xs sm:text-sm text-slate-400 max-w-lg mx-auto">
+        Powered by Titanium v9.0.0 Singularity with direct SQLite & Vector semantic retrieval.
+      </p>
+    </div>
+
+    <!-- Interactive Chat Card -->
+    <div class="bg-slate-900/60 border border-white/10 rounded-2xl flex-1 flex flex-col min-h-[420px] p-4 sm:p-6 shadow-2xl backdrop-blur">
+      
+      <!-- Chat Messages Scroll Container -->
+      <div id="ai-chat-history" class="flex-1 overflow-y-auto space-y-4 pr-2 mb-4 max-h-[380px]">
+        <!-- Welcome Message -->
+        <div class="flex items-start gap-3">
+          <div class="w-8 h-8 rounded-xl bg-gradient-to-tr from-sky-500 to-indigo-500 flex items-center justify-center text-slate-950 font-bold text-sm shrink-0">
+            🤖
+          </div>
+          <div class="bg-slate-800/80 border border-white/5 rounded-2xl rounded-tl-none p-4 max-w-lg text-sm text-slate-200 leading-relaxed shadow-lg">
+            Hello! I am your <strong>Singularity Shopping Copilot</strong>. Ask me anything about our titanium EDC gear, stock availability, or price comparisons!
+          </div>
+        </div>
+      </div>
+
+      <!-- Live Stream Status Indicator -->
+      <div id="ai-stream-status" class="hidden text-[11px] font-mono text-sky-400 mb-2 flex items-center gap-2">
+        <span class="w-2 h-2 rounded-full bg-sky-400 animate-ping"></span>
+        Streaming tokens in real-time...
+      </div>
+
+      <!-- Quick Prompt Suggestions -->
+      <div class="flex flex-wrap gap-2 mb-3">
+        <button onclick="askPrompt('What are your best titanium watches and EDC items?')" class="text-[11px] px-3 py-1.5 rounded-xl bg-white/5 hover:bg-white/10 text-slate-300 border border-white/5 transition">
+          ⌚ Recommend a watch
+        </button>
+        <button onclick="askPrompt('Which items are currently in stock with fastest shipping?')" class="text-[11px] px-3 py-1.5 rounded-xl bg-white/5 hover:bg-white/10 text-slate-300 border border-white/5 transition">
+          📦 Stock & Delivery
+        </button>
+        <button onclick="askPrompt('Give me a luxury gift recommendation under $200.')" class="text-[11px] px-3 py-1.5 rounded-xl bg-white/5 hover:bg-white/10 text-slate-300 border border-white/5 transition">
+          🎁 Gift under $200
+        </button>
+      </div>
+
+      <!-- Input Form -->
+      <form id="ai-chat-form" onsubmit="handleAiSubmit(event)" class="flex gap-2">
+        <input 
+          type="text" 
+          id="ai-prompt-input" 
+          placeholder="Ask our AI agent about any product..." 
+          class="flex-1 bg-slate-950 border border-white/10 focus:border-sky-500 rounded-xl px-4 py-3 text-sm text-white focus:outline-none transition"
+          autocomplete="off"
+        />
+        <button type="submit" class="px-5 py-3 rounded-xl bg-sky-500 hover:bg-sky-400 text-slate-950 font-bold text-sm shadow-lg shadow-sky-500/25 transition shrink-0 flex items-center gap-2">
+          <span>Send</span>
+          <span>⚡</span>
+        </button>
+      </form>
+
+    </div>
+
+  </main>
+
+  <script>
+    function askPrompt(text) {
+      document.getElementById('ai-prompt-input').value = text;
+      handleAiSubmit(new Event('submit'));
+    }
+
+    function handleAiSubmit(e) {
+      if (e && e.preventDefault) e.preventDefault();
+      const input = document.getElementById('ai-prompt-input');
+      const text = (input.value || '').trim();
+      if (!text) return;
+
+      input.value = '';
+      const history = document.getElementById('ai-chat-history');
+      const status = document.getElementById('ai-stream-status');
+
+      // 1. Append User Message
+      const userBubble = document.createElement('div');
+      userBubble.className = 'flex items-start justify-end gap-3';
+      userBubble.innerHTML = `
+        <div class="bg-sky-500/10 border border-sky-500/20 rounded-2xl rounded-tr-none p-4 max-w-lg text-sm text-sky-200 leading-relaxed shadow-lg">
+          ${escapeHtml(text)}
+        </div>
+        <div class="w-8 h-8 rounded-xl bg-slate-800 border border-white/10 flex items-center justify-center text-xs font-bold text-slate-300 shrink-0">
+          You
+        </div>
+      `;
+      history.appendChild(userBubble);
+      history.scrollTop = history.scrollHeight;
+
+      // 2. Prepare Assistant Bubble
+      const botBubble = document.createElement('div');
+      botBubble.className = 'flex items-start gap-3';
+      botBubble.innerHTML = `
+        <div class="w-8 h-8 rounded-xl bg-gradient-to-tr from-sky-500 to-indigo-500 flex items-center justify-center text-slate-950 font-bold text-sm shrink-0">
+          🤖
+        </div>
+        <div class="bot-content bg-slate-800/80 border border-white/5 rounded-2xl rounded-tl-none p-4 max-w-lg text-sm text-slate-200 leading-relaxed shadow-lg">
+          <span class="animate-pulse">Thinking...</span>
+        </div>
+      `;
+      history.appendChild(botBubble);
+      history.scrollTop = history.scrollHeight;
+
+      const contentEl = botBubble.querySelector('.bot-content');
+      status.classList.remove('hidden');
+
+      let firstToken = true;
+
+      if (window.Titanium && window.Titanium.aiStream) {
+        window.Titanium.aiStream(text, {
+          onToken: (token, fullText) => {
+            if (firstToken) {
+              contentEl.innerHTML = '';
+              firstToken = false;
+            }
+            contentEl.innerText = fullText;
+            history.scrollTop = history.scrollHeight;
+          },
+          onDone: (fullText) => {
+            status.classList.add('hidden');
+          },
+          onError: (err) => {
+            status.classList.add('hidden');
+            if (firstToken) contentEl.innerHTML = '<span class="text-rose-400">Connection error. Please retry.</span>';
+          }
+        });
+      } else {
+        contentEl.innerText = "Titanium AI streaming bridge initializing...";
+        status.classList.add('hidden');
+      }
+    }
+
+    function escapeHtml(str) {
+      return str.replace(/[&<>'"]/g, tag => ({
+        '&': '&amp;',
+        '<': '&lt;',
+        '>': '&gt;',
+        "'": '&#39;',
+        '"': '&quot;'
+      }[tag] || tag));
+    }
+  </script>
+
+</body>
+</html>

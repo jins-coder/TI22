@@ -5,8 +5,10 @@ use crate::core::engine::TitaniumEngine;
 use crate::core::router::Router;
 use crate::core::session::SessionStore;
 use crate::server::studio::STUDIO_HTML;
+use crate::services::ai::AiEngine;
 use crate::services::pubsub::PubSubHub;
 use crate::services::queue::JobQueue;
+use crate::services::vector::VectorEngine;
 use crate::services::websocket::WebSocketHub;
 use crate::storage::cache::CacheStore;
 use crate::storage::db::Database;
@@ -19,7 +21,7 @@ use tiny_http::{Header, Response, Server};
 pub const TURBO_CLIENT_SCRIPT: &str = r#"
 <script>
 (function() {
-  // 0. Titanium Realtime WebSockets & Live Channels (v8.0.0 Hyperdrive)
+  // 0. Titanium Realtime WebSockets & Singularity AI Engine (v9.0.0)
   window.Titanium = window.Titanium || {};
   window.Titanium.channels = {};
   window.Titanium.eventSources = {};
@@ -67,6 +69,60 @@ pub const TURBO_CLIENT_SCRIPT: &str = r#"
   };
 
   window.Titanium.send = window.Titanium.broadcast;
+
+  // Singularity AI Client Streaming Bridge
+  window.Titanium.aiStream = function(prompt, options = {}) {
+    const onToken = options.onToken || (() => {});
+    const onDone = options.onDone || (() => {});
+    const onError = options.onError || (() => {});
+    const system = options.system || '';
+
+    const url = '/__titanium_ai/stream?prompt=' + encodeURIComponent(prompt) + '&system=' + encodeURIComponent(system);
+    const es = new EventSource(url);
+    let fullText = '';
+
+    es.addEventListener('token', (e) => {
+      try {
+        const data = JSON.parse(e.data);
+        const token = data.token || '';
+        fullText += token;
+        onToken(token, fullText);
+      } catch (_) {}
+    });
+
+    es.addEventListener('done', (e) => {
+      try {
+        const data = JSON.parse(e.data);
+        onDone(fullText, data);
+      } catch (_) {
+        onDone(fullText);
+      }
+      es.close();
+    });
+
+    es.onerror = (err) => {
+      onError(err);
+      es.close();
+    };
+
+    return () => es.close();
+  };
+
+  window.Titanium.aiChat = async function(prompt, system) {
+    return fetch('/__titanium_ai/chat', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ prompt, system })
+    }).then(r => r.json());
+  };
+
+  window.Titanium.aiRag = async function(query, collection = 'documents', top_k = 3) {
+    return fetch('/__titanium_ai/rag', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ query, collection, top_k })
+    }).then(r => r.json());
+  };
   // 1. Zero-Flicker Debounced Progress Bar Loader
   const bar = document.createElement('div');
   bar.id = '__titanium_progress';
@@ -392,8 +448,18 @@ pub fn run_server(config: ServerConfig) -> Result<(), Box<dyn std::error::Error>
     let queue = JobQueue::new(config.queue_workers);
     let pubsub = PubSubHub::new();
     let ws = WebSocketHub::new();
+    let ai = AiEngine::new();
+    let vector = VectorEngine::new();
 
-    let engine = TitaniumEngine::new(db.clone(), cache.clone(), queue.clone(), pubsub.clone(), ws.clone());
+    let engine = TitaniumEngine::new(
+        db.clone(),
+        cache.clone(),
+        queue.clone(),
+        pubsub.clone(),
+        ws.clone(),
+        ai.clone(),
+        vector.clone(),
+    );
     let session_store = SessionStore::new();
 
     let router = Arc::new(Mutex::new(Router::new()));
@@ -409,6 +475,8 @@ pub fn run_server(config: ServerConfig) -> Result<(), Box<dyn std::error::Error>
     let queue_arc = Arc::new(queue);
     let pubsub_arc = Arc::new(pubsub);
     let ws_arc = Arc::new(ws);
+    let ai_arc = Arc::new(ai);
+    let vector_arc = Arc::new(vector);
 
     let num_threads = if config.workers == 0 { 4 } else { config.workers };
     let mut handles = Vec::new();
@@ -423,6 +491,8 @@ pub fn run_server(config: ServerConfig) -> Result<(), Box<dyn std::error::Error>
         let queue = Arc::clone(&queue_arc);
         let pubsub = Arc::clone(&pubsub_arc);
         let ws = Arc::clone(&ws_arc);
+        let ai = Arc::clone(&ai_arc);
+        let vector = Arc::clone(&vector_arc);
         let root_dir = root_dir.clone();
         let public_dir = public_dir.clone();
         let pages_dir = pages_dir.clone();
@@ -657,8 +727,78 @@ pub fn run_server(config: ServerConfig) -> Result<(), Box<dyn std::error::Error>
 
                 // Titanium Diagnostics Health Endpoint
                 if path == "/__titanium_health" {
-                    let body = r#"{"status":"healthy","version":"8.0.0","engine":"Titanium (Ti22) Hyperdrive","realtime_ws":true,"sqlite":"WAL","orm":true,"mvc":true,"cache":true,"queue":true,"pubsub":true,"vector":true,"media":true}"#;
+                    let body = r#"{"status":"healthy","version":"9.0.0","engine":"Titanium (Ti22) Singularity","ai":true,"realtime_ws":true,"sqlite":"WAL","orm":true,"mvc":true,"cache":true,"queue":true,"pubsub":true,"vector":true,"media":true}"#;
                     let resp = Response::from_string(body)
+                        .with_status_code(200)
+                        .with_header(Header::from_bytes(&b"Content-Type"[..], &b"application/json"[..]).unwrap());
+                    let _ = req.respond(resp);
+                    continue;
+                }
+
+                // Titanium v9.0.0 Singularity AI Streaming Endpoint (SSE)
+                if path == "/__titanium_ai/stream" {
+                    let prompt = parsed_url.query_pairs().find(|(k, _)| k == "prompt").map(|(_, v)| v.to_string()).unwrap_or_default();
+                    let system = parsed_url.query_pairs().find(|(k, _)| k == "system").map(|(_, v)| v.to_string());
+                    let chunks = ai.generate_stream_chunks(&prompt, system.as_deref());
+                    let mut sse = String::new();
+                    for (idx, c) in chunks.iter().enumerate() {
+                        let payload = serde_json::json!({ "token": c, "index": idx });
+                        sse.push_str(&format!("event: token\ndata: {}\n\n", payload));
+                    }
+                    let done_payload = serde_json::json!({ "status": "completed", "total_tokens": chunks.len() });
+                    sse.push_str(&format!("event: done\ndata: {}\n\n", done_payload));
+                    let resp = Response::from_string(sse)
+                        .with_status_code(200)
+                        .with_header(Header::from_bytes(&b"Content-Type"[..], &b"text/event-stream"[..]).unwrap())
+                        .with_header(Header::from_bytes(&b"Cache-Control"[..], &b"no-cache, no-transform"[..]).unwrap())
+                        .with_header(Header::from_bytes(&b"Connection"[..], &b"keep-alive"[..]).unwrap());
+                    let _ = req.respond(resp);
+                    continue;
+                }
+
+                // Titanium v9.0.0 Singularity AI Chat Completion
+                if path == "/__titanium_ai/chat" {
+                    let mut body_bytes = Vec::new();
+                    let _ = req.as_reader().read_to_end(&mut body_bytes);
+                    let res_json = match serde_json::from_slice::<serde_json::Value>(&body_bytes) {
+                        Ok(val) => {
+                            let prompt = val["prompt"].as_str().unwrap_or("");
+                            let system = val.get("system").and_then(|s| s.as_str());
+                            match ai.generate(prompt, system) {
+                                Ok(response) => serde_json::json!({ "success": true, "response": response }),
+                                Err(e) => serde_json::json!({ "success": false, "error": e }),
+                            }
+                        }
+                        Err(e) => serde_json::json!({ "success": false, "error": e.to_string() }),
+                    };
+                    let resp = Response::from_string(res_json.to_string())
+                        .with_status_code(200)
+                        .with_header(Header::from_bytes(&b"Content-Type"[..], &b"application/json"[..]).unwrap());
+                    let _ = req.respond(resp);
+                    continue;
+                }
+
+                // Titanium v9.0.0 Singularity Semantic RAG Query
+                if path == "/__titanium_ai/rag" {
+                    let mut body_bytes = Vec::new();
+                    let _ = req.as_reader().read_to_end(&mut body_bytes);
+                    let res_json = match serde_json::from_slice::<serde_json::Value>(&body_bytes) {
+                        Ok(val) => {
+                            let query = val["query"].as_str().unwrap_or("");
+                            let collection = val["collection"].as_str().unwrap_or("documents");
+                            let top_k = val["top_k"].as_u64().unwrap_or(3) as usize;
+                            match ai.rag_search_and_answer(query, &vector, collection, top_k) {
+                                Ok(map) => {
+                                    let dyn_map = Dynamic::from(map);
+                                    let j = rhai::serde::from_dynamic::<serde_json::Value>(&dyn_map).unwrap_or(serde_json::json!({}));
+                                    serde_json::json!({ "success": true, "result": j })
+                                }
+                                Err(e) => serde_json::json!({ "success": false, "error": e }),
+                            }
+                        }
+                        Err(e) => serde_json::json!({ "success": false, "error": e.to_string() }),
+                    };
+                    let resp = Response::from_string(res_json.to_string())
                         .with_status_code(200)
                         .with_header(Header::from_bytes(&b"Content-Type"[..], &b"application/json"[..]).unwrap());
                     let _ = req.respond(resp);

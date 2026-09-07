@@ -2,7 +2,7 @@ pub const STUDIO_HTML: &str = r#"<!DOCTYPE html>
 <html lang="en">
 <head>
   <meta charset="UTF-8">
-  <title>Titanium Web Studio (Ti22) v8.0.0</title>
+  <title>Titanium Web Studio (Ti22) v9.0.0</title>
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;600;700;800&family=JetBrains+Mono:wght@400;600&display=swap">
   <style>
@@ -75,13 +75,14 @@ pub const STUDIO_HTML: &str = r#"<!DOCTYPE html>
       <span>Titanium Studio</span>
     </div>
     <div class="nav-item active" onclick="switchTab('overview', this)">📊 Overview & Metrics</div>
+    <div class="nav-item" onclick="switchTab('ai', this)">🧠 AI Playground & RAG</div>
     <div class="nav-item" onclick="switchTab('realtime', this)">📡 Live WebSockets</div>
     <div class="nav-item" onclick="switchTab('database', this)">🗄️ Database Manager</div>
     <div class="nav-item" onclick="switchTab('sql', this)">⚡ SQL Console</div>
     <div class="nav-item" onclick="switchTab('routes', this)">🧭 Route Map</div>
     <div class="status-badge">
       <span>●</span>
-      <span>v8.0.0 Hyperdrive</span>
+      <span>v9.0.0 Singularity AI</span>
     </div>
   </div>
 
@@ -116,6 +117,59 @@ pub const STUDIO_HTML: &str = r#"<!DOCTYPE html>
         <p style="color:var(--muted); font-size:14px; line-height:1.6;">
           Titanium v8.0.0 integrates native real-time WebSockets and bi-directional live topic broadcasting directly into the multi-threaded Rust execution pipeline alongside single-file components and domain-driven MVC architecture.
         </p>
+      </div>
+    </div>
+
+    <!-- AI PLAYGROUND & RAG TAB -->
+    <div id="tab-ai" class="tab-pane">
+      <div class="header">
+        <div>
+          <h1>Singularity AI & RAG Agent Playground</h1>
+          <p class="subtitle">Live token streaming, prompt engineering, and semantic vector grounding.</p>
+        </div>
+      </div>
+
+      <div class="grid">
+        <div class="stat-card">
+          <div class="stat-lbl">AI ENGINE MODE</div>
+          <div class="stat-val" style="color:var(--primary); font-size:24px;">Singularity 1B</div>
+          <div style="color:var(--muted); font-size:12px;">Local Embedded / Ollama / OpenAI</div>
+        </div>
+        <div class="stat-card">
+          <div class="stat-lbl">LATENCY & STREAMING</div>
+          <div class="stat-val" style="color:var(--success); font-size:24px;">&lt; 5ms SSE</div>
+          <div style="color:var(--muted); font-size:12px;">Zero-allocation token streaming</div>
+        </div>
+        <div class="stat-card">
+          <div class="stat-lbl">RAG VECTOR EMBEDDINGS</div>
+          <div class="stat-val" style="color:var(--accent); font-size:24px;">VectorEngine</div>
+          <div style="color:var(--muted); font-size:12px;">Cosine similarity knowledge store</div>
+        </div>
+      </div>
+
+      <div class="card">
+        <h3 style="margin-bottom:16px;">🧠 Interactive AI Token Streamer</h3>
+        <div style="display:flex; flex-direction:column; gap:12px; margin-bottom:14px;">
+          <div>
+            <label style="font-size:12px; color:var(--muted); display:block; margin-bottom:6px; font-weight:700;">System Persona (Optional)</label>
+            <input id="ai-system-prompt" value="You are the Titanium Singularity E-Commerce Shopping Concierge." style="width:100%; background:#050811; border:1px solid var(--card-border); padding:10px; border-radius:8px; color:#fff; font-family:'JetBrains Mono'; font-size:13px;" />
+          </div>
+          <div>
+            <label style="font-size:12px; color:var(--muted); display:block; margin-bottom:6px; font-weight:700;">User Prompt</label>
+            <input id="ai-user-prompt" value="What titanium products do you recommend for outdoor daily wear?" style="width:100%; background:#050811; border:1px solid var(--card-border); padding:10px; border-radius:8px; color:#38bdf8; font-family:'JetBrains Mono'; font-size:13px;" />
+          </div>
+        </div>
+        <div style="display:flex; gap:10px;">
+          <button class="btn" onclick="runStudioAiStream()">⚡ Stream AI Response</button>
+          <button class="btn btn-secondary" onclick="runStudioAiRag()">🔍 Test Semantic RAG</button>
+        </div>
+
+        <div style="margin-top:16px;">
+          <label style="font-size:12px; color:var(--muted); display:block; margin-bottom:6px; font-weight:700;">Live Generated Output</label>
+          <div id="ai-stream-output" class="log-stream" style="min-height:140px; color:#f8fafc; font-family:'Plus Jakarta Sans', sans-serif; line-height:1.6; font-size:14px;">
+            AI response will stream here in real-time...
+          </div>
+        </div>
       </div>
     </div>
 
@@ -359,6 +413,61 @@ pub const STUDIO_HTML: &str = r#"<!DOCTYPE html>
           } catch (_) {}
         });
       } catch (_) {}
+    }
+
+    // Singularity AI Studio Handlers
+    let activeAiStream = null;
+    function runStudioAiStream() {
+      const prompt = document.getElementById('ai-user-prompt').value;
+      const system = document.getElementById('ai-system-prompt').value;
+      const out = document.getElementById('ai-stream-output');
+
+      if (activeAiStream) activeAiStream.close();
+      out.textContent = '';
+
+      const url = '/__titanium_ai/stream?prompt=' + encodeURIComponent(prompt) + '&system=' + encodeURIComponent(system);
+      const es = new EventSource(url);
+      activeAiStream = es;
+
+      es.addEventListener('token', (e) => {
+        try {
+          const data = JSON.parse(e.data);
+          out.textContent += (data.token || '');
+        } catch (_) {}
+      });
+
+      es.addEventListener('done', (e) => {
+        es.close();
+        activeAiStream = null;
+      });
+
+      es.onerror = (e) => {
+        out.textContent += '\n[Stream Connection Closed]';
+        es.close();
+        activeAiStream = null;
+      };
+    }
+
+    async function runStudioAiRag() {
+      const query = document.getElementById('ai-user-prompt').value;
+      const out = document.getElementById('ai-stream-output');
+      out.textContent = '🔍 Querying Vector Semantic Embeddings & Synthesizing Grounded Answer...\n';
+
+      try {
+        const res = await fetch('/__titanium_ai/rag', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ query, collection: 'documents', top_k: 3 })
+        });
+        const data = await res.json();
+        if (data.result && data.result.answer) {
+          out.textContent = `🎯 Grounded Answer (${data.result.sources_count || 0} vector sources retrieved):\n\n${data.result.answer}`;
+        } else {
+          out.textContent = `Response: ${JSON.stringify(data)}`;
+        }
+      } catch (err) {
+        out.textContent = `RAG Error: ${err.message}`;
+      }
     }
 
     loadTables();

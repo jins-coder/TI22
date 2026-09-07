@@ -1,6 +1,6 @@
 [package]
 name = "titanium"
-version = "8.0.0"
+version = "9.0.0"
 edition = "2021"
 description = "Titanium (Ti22) - Dual-Engine Native Web Runtime with Realtime WebSockets, Embedded SQLite, ActiveRecord ORM, and Turbo SPA"
 authors = ["Titanium Team"]

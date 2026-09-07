@@ -112,6 +112,12 @@ let flash_msg = session.flash("msg");
             </a>
           {% endif %}
 
+          <!-- AI Concierge Link -->
+          <a href="/ai_copilot" class="hidden sm:flex items-center gap-1.5 px-3 py-2 rounded-xl text-xs font-bold text-indigo-300 bg-indigo-500/10 border border-indigo-500/30 hover:bg-indigo-500/20 transition">
+            <span>🧠</span>
+            <span>AI Copilot</span>
+          </a>
+
           <a href="/cart" class="relative flex items-center gap-2 px-4 py-2 rounded-xl bg-gradient-to-r from-sky-500 to-indigo-600 hover:from-sky-400 hover:to-indigo-500 text-white text-sm font-bold shadow-lg shadow-sky-500/25 hover:shadow-sky-500/40 transition">
             <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M16 11V7a4 4 0 00-8 0v4M5 9h14l1 12H4L5 9z"></path></svg>
             <span>Cart</span>
