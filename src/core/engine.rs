@@ -594,6 +594,26 @@ impl TitaniumEngine {
             haystack.ends_with(needle)
         });
 
+        engine.register_fn("trim", |s: &str| -> String {
+            s.trim().to_string()
+        });
+
+        engine.register_fn("to_lower", |s: &str| -> String {
+            s.to_lowercase()
+        });
+
+        engine.register_fn("to_upper", |s: &str| -> String {
+            s.to_uppercase()
+        });
+
+        engine.register_fn("lower", |s: &str| -> String {
+            s.to_lowercase()
+        });
+
+        engine.register_fn("upper", |s: &str| -> String {
+            s.to_uppercase()
+        });
+
         engine.register_fn("str_slug", |text: &str| -> String {
             text.to_lowercase()
                 .chars()

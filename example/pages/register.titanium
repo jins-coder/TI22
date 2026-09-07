@@ -1,0 +1,138 @@
+---
+// Titanium Authentication: Register Controller
+let redirect_target = if query.redirect != () && query.redirect != "" { query.redirect } else { "/" };
+
+if req.method == "POST" {
+  let name = if body.name != () { to_string(body.name) } else { "" };
+  let email = if body.email != () { to_string(body.email) } else { "" };
+  let password = if body.password != () { to_string(body.password) } else { "" };
+  let req_redirect = if body.redirect != () && body.redirect != "" { to_string(body.redirect) } else { redirect_target };
+
+  if name == "" || email == "" || password == "" {
+    session.flash("error", "All fields are required.");
+    return redirect("/register?redirect=" + req_redirect);
+  }
+
+  if password.len() < 6 {
+    session.flash("error", "Password must be at least 6 characters.");
+    return redirect("/register?redirect=" + req_redirect);
+  }
+
+  // Check existing user
+  let existing = db_first("SELECT id FROM users WHERE email = ?", [email]);
+  if existing != () {
+    session.flash("error", "An account with this email address already exists.");
+    return redirect("/register?redirect=" + req_redirect);
+  }
+
+  let hash = crypto_hash(password);
+  db_run("INSERT INTO users (name, email, password_hash, role) VALUES (?, ?, ?, 'customer')", [name, email, hash]);
+  let new_user = db_first("SELECT id, name, email, role FROM users WHERE email = ?", [email]);
+
+  if new_user != () {
+    session.set("user_id", new_user.id);
+    session.set("user_name", new_user.name);
+    session.set("user_email", new_user.email);
+    session.set("user_role", new_user.role);
+    session.flash("msg", "Welcome to Titanium, " + new_user.name + "! Your account has been created.");
+  }
+
+  return redirect(req_redirect);
+}
+
+// If already logged in, redirect
+let user_id = session.get("user_id");
+if user_id != () && user_id != "" {
+  return redirect(redirect_target);
+}
+
+let flash_error = session.flash("error");
+let flash_msg = session.flash("msg");
+---
+<!DOCTYPE html>
+<html lang="en" class="h-full">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Create Account | TITANIUM STORE</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <script>
+    tailwind.config = {
+      darkMode: 'class',
+      theme: {
+        extend: {
+          colors: {
+            ti: {
+              bg: '#090d16',
+              card: '#0f172a',
+              cyan: '#38bdf8',
+              indigo: '#6366f1',
+              emerald: '#10b981',
+              rose: '#f43f5e'
+            }
+          }
+        }
+      }
+    }
+  </script>
+  <link rel="stylesheet" href="/app.css">
+</head>
+<body class="bg-[#090d16] text-slate-100 min-h-screen flex flex-col justify-center items-center px-4 sm:px-6 lg:px-8 relative overflow-x-hidden selection:bg-sky-500 selection:text-white">
+
+  <!-- Background Cyber Glows -->
+  <div class="fixed top-1/4 left-1/2 -translate-x-1/2 w-[600px] h-[350px] bg-sky-500/10 rounded-full blur-[140px] pointer-events-none"></div>
+  <div class="fixed bottom-10 left-10 w-96 h-96 bg-indigo-500/10 rounded-full blur-[120px] pointer-events-none"></div>
+
+  <!-- Top Logo Link -->
+  <div class="sm:mx-auto sm:w-full sm:max-w-md text-center mb-6 relative z-10">
+    <a href="/" class="inline-flex items-center gap-2 text-2xl font-black tracking-widest text-white group">
+      <span class="w-8 h-8 rounded-lg bg-gradient-to-tr from-sky-400 to-indigo-500 flex items-center justify-center font-mono text-sm text-slate-950 font-black shadow-lg shadow-sky-500/30 group-hover:scale-105 transition">Ti</span>
+      <span class="bg-clip-text text-transparent bg-gradient-to-r from-white via-slate-200 to-sky-300">TITANIUM</span>
+    </a>
+    <h2 class="mt-4 text-xl font-bold text-white tracking-tight">Create your account</h2>
+    <p class="mt-1 text-xs text-slate-400">Join Titanium Store for instant zero-reload checkout</p>
+  </div>
+
+  <!-- Register Card -->
+  <div class="w-full max-w-md glass-panel p-8 rounded-2xl relative z-10 border border-white/10 shadow-2xl">
+    
+    {% if flash_error %}
+      <div class="mb-5 p-3 rounded-xl bg-rose-500/10 border border-rose-500/30 text-rose-300 text-xs font-semibold flex items-center gap-2">
+        <span>⚠️</span>
+        <span>{{ flash_error }}</span>
+      </div>
+    {% endif %}
+
+    <!-- Register Form -->
+    <form method="POST" action="/register" class="space-y-4">
+      <input type="hidden" name="redirect" value="{{ redirect_target }}">
+
+      <div>
+        <label for="name" class="block text-xs font-bold text-slate-300 uppercase tracking-wider mb-1.5">Full Name</label>
+        <input id="name" name="name" type="text" required placeholder="Alex Mercer" class="w-full px-4 py-2.5 rounded-xl bg-slate-900 border border-white/10 text-white placeholder-slate-500 text-sm focus:outline-none focus:border-sky-500 focus:ring-1 focus:ring-sky-500 transition">
+      </div>
+
+      <div>
+        <label for="email" class="block text-xs font-bold text-slate-300 uppercase tracking-wider mb-1.5">Email Address</label>
+        <input id="email" name="email" type="email" required placeholder="name@example.com" class="w-full px-4 py-2.5 rounded-xl bg-slate-900 border border-white/10 text-white placeholder-slate-500 text-sm focus:outline-none focus:border-sky-500 focus:ring-1 focus:ring-sky-500 transition">
+      </div>
+
+      <div>
+        <label for="password" class="block text-xs font-bold text-slate-300 uppercase tracking-wider mb-1.5">Password</label>
+        <input id="password" name="password" type="password" required placeholder="At least 6 characters" class="w-full px-4 py-2.5 rounded-xl bg-slate-900 border border-white/10 text-white placeholder-slate-500 text-sm focus:outline-none focus:border-sky-500 focus:ring-1 focus:ring-sky-500 transition">
+      </div>
+
+      <button type="submit" class="w-full py-3 px-4 rounded-xl bg-gradient-to-r from-sky-400 to-indigo-500 hover:from-sky-300 hover:to-indigo-400 text-slate-950 font-black text-sm tracking-wide transition shadow-lg shadow-sky-500/25 hover:scale-[1.01] active:scale-[0.99] flex items-center justify-center gap-2">
+        <span>Create Account</span>
+        <span>→</span>
+      </button>
+    </form>
+
+    <div class="mt-6 pt-6 border-t border-white/5 text-center text-xs text-slate-400">
+      Already have an account?
+      <a href="/login?redirect={{ redirect_target }}" class="text-sky-400 hover:text-sky-300 font-bold ml-1">Sign In</a>
+    </div>
+
+  </div>
+</body>
+</html>

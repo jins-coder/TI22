@@ -1,0 +1,11 @@
+---
+// Titanium Authentication: Logout Handler
+session.remove("user_id");
+session.remove("user_name");
+session.remove("user_email");
+session.remove("user_role");
+session.flash("msg", "You have been signed out successfully.");
+
+let redirect_target = if query.redirect != () && query.redirect != "" { query.redirect } else { "/" };
+return redirect(redirect_target);
+---
