@@ -260,16 +260,16 @@ impl Database {
 }
 
 fn dynamic_to_sql(dyn_val: &Dynamic) -> Box<dyn ToSql> {
-    if dyn_val.is_string() {
-        Box::new(dyn_val.clone_cast::<String>())
-    } else if dyn_val.is_int() {
-        Box::new(dyn_val.clone_cast::<i64>())
-    } else if dyn_val.is_float() {
-        Box::new(dyn_val.clone_cast::<f64>())
-    } else if dyn_val.is_bool() {
-        Box::new(dyn_val.clone_cast::<bool>())
-    } else if dyn_val.is_unit() {
+    if dyn_val.is_unit() {
         Box::new(rusqlite::types::Null)
+    } else if let Ok(i) = dyn_val.as_int() {
+        Box::new(i)
+    } else if let Ok(f) = dyn_val.as_float() {
+        Box::new(f)
+    } else if let Ok(b) = dyn_val.as_bool() {
+        Box::new(b)
+    } else if dyn_val.is_string() {
+        Box::new(dyn_val.clone_cast::<String>())
     } else {
         Box::new(dyn_val.to_string())
     }
