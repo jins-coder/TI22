@@ -1,9 +1,30 @@
+# Build outputs
 target/
+dist/
+build/
+
+# Titanium runtime directories & databases
 .titanium/
 .carbon/
 *.sqlite
 *.sqlite-wal
 *.sqlite-shm
 *.sqlite-journal
+*.db
+
+# Logs & Environment
 *.log
+.env
+.env.*
+.env.local
+
+# Package managers & binaries
 node_modules/
+*.vsix
+
+# OS & IDE artifacts
+.DS_Store
+Thumbs.db
+.idea/
+.vscode/*.log
+*.tmp
