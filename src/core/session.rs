@@ -43,6 +43,17 @@ impl SessionHandle {
         map.insert(key.to_string(), value);
     }
 
+    pub fn id(&self) -> String {
+        self.session_id.clone()
+    }
+
+    pub fn remove(&self, key: &str) {
+        let mut sessions = self.store.sessions.lock().unwrap();
+        if let Some(map) = sessions.get_mut(&self.session_id) {
+            map.remove(key);
+        }
+    }
+
     pub fn flash_set(&self, key: &str, value: Dynamic) {
         let mut flashes = self.store.flashes.lock().unwrap();
         let map = flashes.entry(self.session_id.clone()).or_default();

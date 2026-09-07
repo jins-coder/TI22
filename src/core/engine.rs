@@ -31,12 +31,24 @@ impl TitaniumEngine {
         engine.register_type_with_name::<TitaniumResponse>("TitaniumResponse");
         engine.register_type_with_name::<SessionHandle>("Session");
 
-        // Session methods: session.get(), session.set(), session.flash(), session.csrf()
+        // Session methods: session.id(), session.get(), session.set(), session.remove(), session.flash(), session.csrf()
+        engine.register_fn("id", |s: &mut SessionHandle| -> String {
+            s.id()
+        });
+        engine.register_get("id", |s: &mut SessionHandle| -> String {
+            s.id()
+        });
         engine.register_fn("get", |s: &mut SessionHandle, key: &str| -> Dynamic {
             s.get(key)
         });
         engine.register_fn("set", |s: &mut SessionHandle, key: &str, val: Dynamic| {
             s.set(key, val);
+        });
+        engine.register_fn("remove", |s: &mut SessionHandle, key: &str| {
+            s.remove(key);
+        });
+        engine.register_fn("delete", |s: &mut SessionHandle, key: &str| {
+            s.remove(key);
         });
         engine.register_fn("flash", |s: &mut SessionHandle, key: &str| -> Dynamic {
             s.flash_get(key)
@@ -522,6 +534,50 @@ impl TitaniumEngine {
 
         engine.register_fn("clamp", |val: f64, min: f64, max: f64| -> f64 {
             val.clamp(min, max)
+        });
+
+        // Numeric Parsing & Casting Utilities
+        engine.register_fn("parse_int", |val: &str| -> i64 {
+            val.trim().parse::<i64>().unwrap_or(0)
+        });
+        engine.register_fn("parse_int", |val: Dynamic| -> i64 {
+            if let Ok(num) = val.as_int() {
+                num
+            } else if let Ok(flt) = val.as_float() {
+                flt as i64
+            } else {
+                val.to_string().trim().parse::<i64>().unwrap_or(0)
+            }
+        });
+        engine.register_fn("to_int", |val: Dynamic| -> i64 {
+            if let Ok(num) = val.as_int() {
+                num
+            } else if let Ok(flt) = val.as_float() {
+                flt as i64
+            } else {
+                val.to_string().trim().parse::<i64>().unwrap_or(0)
+            }
+        });
+        engine.register_fn("parse_float", |val: &str| -> f64 {
+            val.trim().parse::<f64>().unwrap_or(0.0)
+        });
+        engine.register_fn("parse_float", |val: Dynamic| -> f64 {
+            if let Ok(flt) = val.as_float() {
+                flt
+            } else if let Ok(num) = val.as_int() {
+                num as f64
+            } else {
+                val.to_string().trim().parse::<f64>().unwrap_or(0.0)
+            }
+        });
+        engine.register_fn("to_float", |val: Dynamic| -> f64 {
+            if let Ok(flt) = val.as_float() {
+                flt
+            } else if let Ok(num) = val.as_int() {
+                num as f64
+            } else {
+                val.to_string().trim().parse::<f64>().unwrap_or(0.0)
+            }
         });
 
         Self {
