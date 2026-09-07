@@ -218,6 +218,12 @@ pub fn run_server(config: ServerConfig) -> Result<(), Box<dyn std::error::Error>
     let addr = format!("{}:{}", config.host, config.port);
     let server = Server::http(&addr).map_err(|e| e.to_string())?;
 
+    // Graceful Ctrl+C shutdown handler
+    let _ = ctrlc::set_handler(move || {
+        println!("\n  🛑 Titanium server gracefully stopped.");
+        std::process::exit(0);
+    });
+
     println!("\n  ⚡ Titanium (Ti22) Native Engine v6.0.0 (Omniverse) ready on http://{}\n", addr);
     println!("  🎨 Titanium Web Studio GUI accessible at: http://{}/__titanium_studio\n", addr);
 
