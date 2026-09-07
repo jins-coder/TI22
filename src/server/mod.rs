@@ -18,13 +18,45 @@ use tiny_http::{Header, Response, Server};
 pub const TURBO_CLIENT_SCRIPT: &str = r#"
 <script>
 (function() {
+  // 1. Zero-Flicker Debounced Progress Bar Loader
   const bar = document.createElement('div');
   bar.id = '__titanium_progress';
-  bar.style.cssText = 'position:fixed;top:0;left:0;height:3px;background:#38bdf8;width:0%;transition:width 0.2s ease, opacity 0.3s ease;z-index:999999;pointer-events:none;box-shadow:0 0 8px #38bdf8;';
+  bar.style.cssText = 'position:fixed;top:0;left:0;height:3px;background:linear-gradient(90deg,#38bdf8,#818cf8);width:0%;opacity:0;z-index:999999;pointer-events:none;box-shadow:0 0 10px rgba(56,189,248,0.7);';
   document.documentElement.appendChild(bar);
 
-  function startProgress() { bar.style.opacity = '1'; bar.style.width = '30%'; setTimeout(() => { if (bar.style.width === '30%') bar.style.width = '70%'; }, 150); }
-  function finishProgress() { bar.style.width = '100%'; setTimeout(() => { bar.style.opacity = '0'; setTimeout(() => { bar.style.width = '0%'; }, 300); }, 150); }
+  let progressTimer = null;
+  let progressActive = false;
+
+  function startProgress() {
+    clearTimeout(progressTimer);
+    // 120ms debounce threshold: instant/micro-second responses will NEVER flash the loader bar!
+    progressTimer = setTimeout(() => {
+      progressActive = true;
+      bar.style.transition = 'width 0.25s cubic-bezier(0.1, 0.9, 0.2, 1), opacity 0.2s ease';
+      bar.style.opacity = '1';
+      bar.style.width = '35%';
+      setTimeout(() => {
+        if (progressActive && bar.style.width === '35%') {
+          bar.style.width = '75%';
+        }
+      }, 200);
+    }, 120);
+  }
+
+  function finishProgress() {
+    clearTimeout(progressTimer);
+    if (progressActive) {
+      progressActive = false;
+      bar.style.width = '100%';
+      setTimeout(() => {
+        bar.style.opacity = '0';
+        setTimeout(() => {
+          bar.style.transition = 'none';
+          bar.style.width = '0%';
+        }, 250);
+      }, 150);
+    }
+  }
 
   function showHmrBadge(message) {
     let badge = document.getElementById('__titanium_hmr_badge');
@@ -44,20 +76,94 @@ pub const TURBO_CLIENT_SCRIPT: &str = r#"
     }, 1600);
   }
 
+  // 2. High-Performance Soft-DOM Morphing (Preserves inputs, focus, cursor, & scroll)
+  function morphTree(oldNode, newNode) {
+    if (oldNode.nodeType !== newNode.nodeType || oldNode.nodeName !== newNode.nodeName) {
+      oldNode.replaceWith(newNode.cloneNode(true));
+      return;
+    }
+    if (oldNode.nodeType === Node.TEXT_NODE || oldNode.nodeType === Node.COMMENT_NODE) {
+      if (oldNode.nodeValue !== newNode.nodeValue) {
+        oldNode.nodeValue = newNode.nodeValue;
+      }
+      return;
+    }
+    // Sync attributes
+    const oldAttrs = Array.from(oldNode.attributes || []);
+    const newAttrs = Array.from(newNode.attributes || []);
+    for (const attr of newAttrs) {
+      if (oldNode.getAttribute(attr.name) !== attr.value) {
+        oldNode.setAttribute(attr.name, attr.value);
+      }
+    }
+    for (const attr of oldAttrs) {
+      if (!newNode.hasAttribute(attr.name)) {
+        oldNode.removeAttribute(attr.name);
+      }
+    }
+    // Form Inputs Value Synchronization without stealing active typing focus
+    if (oldNode.tagName === 'INPUT' || oldNode.tagName === 'TEXTAREA') {
+      if (oldNode !== document.activeElement) {
+        if (oldNode.value !== newNode.value) oldNode.value = newNode.value;
+        if (oldNode.type === 'checkbox' || oldNode.type === 'radio') {
+          oldNode.checked = newNode.checked;
+        }
+      }
+    } else if (oldNode.tagName === 'SELECT') {
+      if (oldNode !== document.activeElement) {
+        oldNode.value = newNode.value;
+      }
+    }
+
+    // Children diffing
+    const oldChildren = Array.from(oldNode.childNodes);
+    const newChildren = Array.from(newNode.childNodes);
+    const max = Math.max(oldChildren.length, newChildren.length);
+    for (let i = 0; i < max; i++) {
+      const oldChild = oldChildren[i];
+      const newChild = newChildren[i];
+      if (oldChild && newChild) {
+        morphTree(oldChild, newChild);
+      } else if (!oldChild && newChild) {
+        oldNode.appendChild(newChild.cloneNode(true));
+      } else if (oldChild && !newChild) {
+        oldChild.remove();
+      }
+    }
+  }
+
   async function applyHtml(htmlText, pushUrl, preserveScroll = false) {
     const prevScrollX = window.scrollX;
     const prevScrollY = window.scrollY;
 
+    // Capture active input and cursor position
+    const activeEl = document.activeElement;
+    const activeTag = activeEl ? activeEl.tagName : null;
+    const activeId = activeEl && activeEl.id ? activeEl.id : null;
+    const activeName = activeEl && activeEl.name ? activeEl.name : null;
+    const isInputActive = activeEl && (activeTag === 'INPUT' || activeTag === 'TEXTAREA' || activeTag === 'SELECT');
+    const selStart = (isInputActive && 'selectionStart' in activeEl) ? activeEl.selectionStart : null;
+    const selEnd = (isInputActive && 'selectionEnd' in activeEl) ? activeEl.selectionEnd : null;
+
     const parser = new DOMParser();
     const doc = parser.parseFromString(htmlText, 'text/html');
     if (doc.title) document.title = doc.title;
-    document.body.innerHTML = doc.body.innerHTML;
-    document.querySelectorAll('script').forEach(oldScript => {
-      if (oldScript.src) return;
-      const newScript = document.createElement('script');
-      newScript.textContent = oldScript.textContent;
-      document.body.appendChild(newScript);
-    });
+
+    // Morph the body smoothly to avoid tearing down DOM elements
+    morphTree(document.body, doc.body);
+
+    // Restore active element focus and selection if needed
+    if (isInputActive) {
+      let targetInput = null;
+      if (activeId) targetInput = document.getElementById(activeId);
+      if (!targetInput && activeName) targetInput = document.querySelector(`[name="${activeName}"]`);
+      if (targetInput && typeof targetInput.focus === 'function') {
+        targetInput.focus();
+        if (selStart !== null && selEnd !== null && typeof targetInput.setSelectionRange === 'function') {
+          try { targetInput.setSelectionRange(selStart, selEnd); } catch (_) {}
+        }
+      }
+    }
 
     if (pushUrl && window.location.href !== pushUrl) {
       window.history.pushState({}, '', pushUrl);
@@ -164,7 +270,6 @@ pub const TURBO_CLIENT_SCRIPT: &str = r#"
         const data = await res.json();
         if (lastMtime !== null && data.mtime && data.mtime > lastMtime) {
           if (data.change_type === 'css') {
-            // CSS HMR: Instantly hot-reload all stylesheets without altering DOM or JS state
             const links = document.querySelectorAll('link[rel="stylesheet"]');
             links.forEach(link => {
               const url = new URL(link.href, window.location.origin);
@@ -173,25 +278,9 @@ pub const TURBO_CLIENT_SCRIPT: &str = r#"
             });
             showHmrBadge('🎨 HMR: Hot-swapped CSS (' + (data.file || 'style') + ')');
           } else {
-            // DOM HMR: Capture active focus & input values, patch DOM, and restore
-            const activeEl = document.activeElement;
-            const activeId = activeEl && activeEl.id ? activeEl.id : null;
-            const activeName = activeEl && activeEl.name ? activeEl.name : null;
-            const activeVal = (activeEl && ('value' in activeEl)) ? activeEl.value : null;
-
             const fresh = await fetch(window.location.href, { cache: 'no-store', headers: { 'X-Titanium-HMR': 'true' } });
             const text = await fresh.text();
             await applyHtml(text, null, true);
-
-            // Restore active input focus and draft value
-            if (activeId) {
-              const el = document.getElementById(activeId);
-              if (el && 'value' in el) { el.value = activeVal; el.focus(); }
-            } else if (activeName) {
-              const el = document.querySelector('[name="' + activeName + '"]');
-              if (el && 'value' in el) { el.value = activeVal; el.focus(); }
-            }
-
             showHmrBadge('⚡ HMR: Hot-updated ' + (data.file || 'component'));
           }
         }
