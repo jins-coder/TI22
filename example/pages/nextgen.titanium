@@ -1,0 +1,156 @@
+---
+// =========================================================================
+// Titanium (Ti22) — v6.0.0 Omniverse Next-Gen Capabilities Showcase
+// =========================================================================
+
+// 1. 🗄️ In-Memory Key-Value Cache with TTL (Native Redis alternative)
+cache_set("site:hero_title", "Titanium Omniverse v6.0.0", 300);
+cache_set("app:visitors_count", 4821);
+let cached_title = cache_get("site:hero_title");
+let cached_visitors = cache_get("app:visitors_count");
+let cache_all_keys = cache_keys();
+let cache_statistics = cache_stats();
+
+// 2. ⏰ In-Process Background Job Queue (Native Celery/BullMQ alternative)
+if req.method == "POST" && body.action == "dispatch_job" {
+    let job_name = if body.job_name != () && body.job_name != "" { body.job_name } else { "send_welcome_email" };
+    defer_job(job_name, #{ user: "Linus", email: "linus@kernel.org", sent_at: "now" });
+    session.flash("msg", "⚡ Background job dispatched to worker pool asynchronously!");
+    return redirect("/nextgen");
+}
+let queue_statistics = queue_stats();
+
+// 3. 🧠 Embedded Vector Search & Cosine Similarity (Native Local RAG)
+let query_vector = [0.95, 0.82, 0.12, 0.05];
+let knowledge_base = [
+    #{ id: 1, title: "Getting Started with Titanium SSR", vector: [0.94, 0.80, 0.10, 0.08], category: "Tutorial" },
+    #{ id: 2, title: "Optimizing SQLite WAL Mode", vector: [0.15, 0.22, 0.88, 0.91], category: "Database" },
+    #{ id: 3, title: "Realtime SSE and WebSocket Streaming", vector: [0.91, 0.85, 0.14, 0.02], category: "Networking" },
+    #{ id: 4, title: "Managing Production SQL Migrations", vector: [0.20, 0.18, 0.92, 0.85], category: "Database" }
+];
+
+let ranked_docs = vector_rank(query_vector, knowledge_base, "vector");
+let sim_score = vector_cosine_similarity([1.0, 0.0, 0.0], [0.99, 0.05, 0.01]);
+
+// 4. 📡 Realtime PubSub Event Hub (Native Room Broadcaster)
+if req.method == "POST" && body.action == "publish_event" {
+    let topic = if body.topic != () && body.topic != "" { body.topic } else { "global_feed" };
+    let text = if body.message != () && body.message != "" { body.message } else { "Hello from Titanium!" };
+    pubsub_publish(topic, #{ text: text, author: "Developer" });
+    session.flash("msg", "📡 Broadcasted message to topic: " + topic);
+    return redirect("/nextgen");
+}
+
+pubsub_publish("global_feed", #{ text: "Titanium v6.0.0 Omniverse instance booted.", author: "System" });
+let feed_events = pubsub_history("global_feed", 5);
+let all_topics = pubsub_topics();
+
+// 5. 🖼️ Pure-Rust SVG Identicon & Media Utilities
+let avatar_svg = svg_identicon("titanium-admin-seed-9821", 80);
+let msg = session.flash("msg");
+---
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Titanium v6.0.0 Omniverse | Next-Gen Capabilities</title>
+  <link rel="stylesheet" href="/app.css">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;600;700;800&family=JetBrains+Mono:wght@400;600&display=swap">
+</head>
+<body>
+  <div class="container">
+    <header class="hero">
+      <div class="badge">🚀 TITANIUM (TI22) v6.0.0 OMNIVERSE</div>
+      <h1>Next-Gen Native Capabilities</h1>
+      <p class="subtitle">Embedded In-Memory Cache • In-Process Job Queue • Vector Cosine Search • Realtime PubSub • Pure-Rust Media</p>
+      <div style="margin-top: 15px; display: flex; gap: 10px; justify-content: center; flex-wrap: wrap;">
+        <a href="/" class="btn" style="font-size: 0.85rem; padding: 6px 14px; text-decoration: none; background: rgba(255,255,255,0.08); border: 1px solid rgba(255,255,255,0.15);">🏠 Dashboard</a>
+        <a href="/spa_demo" class="btn" style="font-size: 0.85rem; padding: 6px 14px; text-decoration: none; background: rgba(56, 189, 248, 0.15); border: 1px solid rgba(56, 189, 248, 0.3); color: #38bdf8;">⚡ Turbo SPA Demo</a>
+        <a href="/nextgen" class="btn btn-primary" style="font-size: 0.85rem; padding: 6px 14px; text-decoration: none;">🚀 Next-Gen Omniverse</a>
+        <a href="/php_features" class="btn" style="font-size: 0.85rem; padding: 6px 14px; text-decoration: none; background: rgba(255,255,255,0.08); border: 1px solid rgba(255,255,255,0.15);">🐘 PHP Primitives</a>
+        <a href="/__titanium_studio" class="btn" style="font-size: 0.85rem; padding: 6px 14px; text-decoration: none; background: rgba(168, 85, 247, 0.15); border: 1px solid rgba(168, 85, 247, 0.3); color: #c084fc;">🛠️ Web Studio</a>
+      </div>
+    </header>
+
+    {% if msg %}
+      <div class="alert alert-success">{{ msg }}</div>
+    {% endif %}
+
+    <div class="grid">
+      <!-- 1. Cache Store -->
+      <div class="card">
+        <h2>🗄️ 1. In-Memory Key-Value & TTL Cache</h2>
+        <p class="card-desc">Zero-dependency concurrent cache (native Redis alternative).</p>
+        <div style="background: rgba(0,0,0,0.3); padding: 12px; border-radius: 8px; font-family: 'JetBrains Mono', monospace; font-size: 0.85rem; margin-top: 10px;">
+          <div><strong>Cached Title:</strong> <code>{{ cached_title }}</code></div>
+          <div style="margin-top: 6px;"><strong>Active Keys ({{ cache_all_keys.len() }}):</strong> {{ cache_all_keys | join(', ') }}</div>
+          <div style="margin-top: 6px;"><strong>Cache Stats:</strong> Total keys = {{ cache_statistics.total_keys }}</div>
+        </div>
+      </div>
+
+      <!-- 2. Job Queue -->
+      <div class="card">
+        <h2>⏰ 2. In-Process Background Job Queue</h2>
+        <p class="card-desc">Multi-threaded async workers (native Celery / BullMQ alternative).</p>
+        <form method="POST" action="/nextgen" style="margin: 12px 0;">
+          <input type="hidden" name="action" value="dispatch_job">
+          <input type="text" name="job_name" placeholder="Job Name (e.g. process_image)" value="generate_pdf_report" style="width: 100%; margin-bottom: 8px; padding: 8px; border-radius: 6px; background: rgba(0,0,0,0.3); border: 1px solid rgba(255,255,255,0.15); color: #fff;">
+          <button type="submit" class="btn btn-primary" style="width: 100%; cursor: pointer;">⚡ Dispatch Async Job</button>
+        </form>
+        <div style="background: rgba(0,0,0,0.3); padding: 12px; border-radius: 8px; font-family: 'JetBrains Mono', monospace; font-size: 0.85rem;">
+          <div><strong>Queued:</strong> {{ queue_statistics.queued }} | <strong>Completed:</strong> {{ queue_statistics.completed }}</div>
+        </div>
+      </div>
+
+      <!-- 3. Vector Search -->
+      <div class="card">
+        <h2>🧠 3. Embedded Vector & Semantic Search</h2>
+        <p class="card-desc">Pure-Rust cosine similarity matching for local AI / RAG knowledge bases.</p>
+        <div style="background: rgba(0,0,0,0.3); padding: 12px; border-radius: 8px; font-family: 'JetBrains Mono', monospace; font-size: 0.85rem; margin-top: 10px;">
+          <div><strong>Cosine Similarity Benchmark:</strong> {{ sim_score }}</div>
+          <div style="margin-top: 8px;"><strong>Ranked Knowledge Base Matches:</strong></div>
+          <ol style="margin: 6px 0 0 20px; color: #38bdf8;">
+            {% for doc in ranked_docs %}
+              <li><strong>{{ doc.title }}</strong> <span style="color: #94a3b8; font-size: 0.75rem;">(Score: {{ doc.similarity_score }})</span></li>
+            {% endfor %}
+          </ol>
+        </div>
+      </div>
+
+      <!-- 4. PubSub Event Hub -->
+      <div class="card">
+        <h2>📡 4. Realtime PubSub Event Hub</h2>
+        <p class="card-desc">In-memory topic channels for live room broadcasting.</p>
+        <form method="POST" action="/nextgen" style="margin: 12px 0;">
+          <input type="hidden" name="action" value="publish_event">
+          <input type="text" name="message" placeholder="Broadcast message..." value="Hello from Titanium v6.0!" style="width: 100%; margin-bottom: 8px; padding: 8px; border-radius: 6px; background: rgba(0,0,0,0.3); border: 1px solid rgba(255,255,255,0.15); color: #fff;">
+          <button type="submit" class="btn btn-primary" style="width: 100%; cursor: pointer;">📢 Publish to global_feed</button>
+        </form>
+        <div style="background: rgba(0,0,0,0.3); padding: 12px; border-radius: 8px; font-family: 'JetBrains Mono', monospace; font-size: 0.85rem;">
+          <div><strong>Recent Feed Events:</strong></div>
+          <ul style="margin: 6px 0 0 16px; color: #a1a1aa;">
+            {% for ev in feed_events %}
+              <li>{{ ev.message.text }} <span style="color: #64748b; font-size: 0.75rem;">by {{ ev.message.author }}</span></li>
+            {% endfor %}
+          </ul>
+        </div>
+      </div>
+
+      <!-- 5. Media & Identicons -->
+      <div class="card">
+        <h2>🖼️ 5. Pure-Rust Media & SVG Identicon</h2>
+        <p class="card-desc">Deterministic visual avatar generation with zero external C dependencies.</p>
+        <div style="display: flex; align-items: center; gap: 16px; margin-top: 12px; background: rgba(0,0,0,0.3); padding: 14px; border-radius: 8px;">
+          <div>{{ avatar_svg | safe }}</div>
+          <div>
+            <div style="font-weight: 700; color: #38bdf8;">Generated SVG Identicon</div>
+            <div style="font-size: 0.8rem; color: #94a3b8; font-family: 'JetBrains Mono', monospace; margin-top: 4px;">Seed: titanium-admin-seed-9821</div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</body>
+</html>

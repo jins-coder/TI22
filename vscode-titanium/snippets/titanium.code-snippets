@@ -1,0 +1,101 @@
+{
+  "Titanium Single-File Page": {
+    "prefix": "tipage",
+    "body": [
+      "---",
+      "// 1. Data queries & handlers",
+      "let ${1:items} = db_query(\"SELECT * FROM ${2:table} ORDER BY id DESC\");",
+      "let msg = session.flash(\"msg\");",
+      "---",
+      "<!DOCTYPE html>",
+      "<html lang=\"en\">",
+      "<head>",
+      "  <meta charset=\"UTF-8\">",
+      "  <title>${3:Title} | Titanium</title>",
+      "  <link rel=\"stylesheet\" href=\"/app.css\">",
+      "</head>",
+      "<body>",
+      "  <div class=\"container\">",
+      "    <h1>⚡ ${3:Title}</h1>",
+      "    {% if msg %}<div class=\"alert\">{{ msg }}</div>{% endif %}",
+      "    ",
+      "    <ul>",
+      "      {% for item in ${1:items} %}",
+      "        <li>{{ item.name }}</li>",
+      "      {% endfor %}",
+      "    </ul>",
+      "  </div>",
+      "</body>",
+      "</html>"
+    ],
+    "description": "Create a new Titanium Single-File SSR Component Page"
+  },
+  "Titanium REST API Endpoint": {
+    "prefix": "tiapi",
+    "body": [
+      "---",
+      "if req.method == \"POST\" {",
+      "  let rules = #{",
+      "    \"${1:title}\": \"required|min:3\"",
+      "  };",
+      "  let val = validate(body, rules);",
+      "  if !val.is_valid {",
+      "    return json(#{ success: false, errors: val.errors }, 422);",
+      "  }",
+      "  ",
+      "  let inserted = db_insert(\"${2:table}\", #{ ${1:title}: body.${1:title} });",
+      "  return json(#{ success: true, data: inserted }, 201);",
+      "}",
+      "",
+      "let data = db_query(\"SELECT * FROM ${2:table}\");",
+      "return json(#{ success: true, count: data.len(), results: data });",
+      "---"
+    ],
+    "description": "Create a Titanium JSON REST API Endpoint"
+  },
+  "Titanium Realtime SSE Stream": {
+    "prefix": "tisse",
+    "body": [
+      "---",
+      "let ${1:feed} = pubsub_history(\"${2:global_feed}\", 10);",
+      "return sse_event(\"${3:update}\", #{ timestamp: \"now\", events: ${1:feed} });",
+      "---"
+    ],
+    "description": "Create a Titanium Server-Sent Events (SSE) Live Stream Endpoint"
+  },
+  "Titanium Database Query": {
+    "prefix": "tidb",
+    "body": [
+      "let ${1:results} = db_query(\"SELECT * FROM ${2:table} WHERE ${3:status} = ?\", [${4:\"active\"}]);"
+    ],
+    "description": "Query SQLite database with parameterized bindings"
+  },
+  "Titanium Cache Remember": {
+    "prefix": "ticache",
+    "body": [
+      "let ${1:cached} = cache_get(\"${2:key}\");",
+      "if ${1:cached} == () {",
+      "  ${1:cached} = ${3:db_query(\"SELECT * FROM items\")};",
+      "  cache_set(\"${2:key}\", ${1:cached}, ${4:300}); // 5 min TTL",
+      "}"
+    ],
+    "description": "In-memory key-value cache get/set pattern"
+  },
+  "Titanium Async Background Job": {
+    "prefix": "tijob",
+    "body": [
+      "defer_job(\"${1:job_name}\", #{",
+      "  ${2:key}: ${3:value}",
+      "});"
+    ],
+    "description": "Dispatch task to native async background worker pool"
+  },
+  "Titanium Vector Cosine Search": {
+    "prefix": "tivector",
+    "body": [
+      "let query_vec = [${1:0.92, 0.85, 0.14}];",
+      "let ranked = vector_rank(query_vec, ${2:documents}, \"vector\");"
+    ],
+    "description": "Vector similarity ranking for AI embeddings"
+  }
+}

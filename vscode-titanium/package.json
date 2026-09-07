@@ -1,0 +1,103 @@
+{
+  "name": "titanium-web",
+  "displayName": "Titanium Web Runtime (Ti22)",
+  "description": "Official syntax highlighting, rich snippets, live server runner, and Web Studio integration for Titanium (Ti22) single-file web applications.",
+  "version": "6.0.0",
+  "publisher": "titanium-team",
+  "license": "MIT",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/titanium-runtime/titanium"
+  },
+  "icon": "icon.png",
+  "engines": {
+    "vscode": "^1.75.0"
+  },
+  "categories": [
+    "Programming Languages",
+    "Snippets",
+    "Linters",
+    "Other"
+  ],
+  "keywords": [
+    "titanium",
+    "ti",
+    "ti22",
+    "web",
+    "runtime",
+    "rust",
+    "ssr",
+    "sqlite",
+    "turbo",
+    "spa"
+  ],
+  "main": "./src/extension.js",
+  "activationEvents": [
+    "onLanguage:titanium",
+    "workspaceContains:titanium.toml",
+    "workspaceContains:pages"
+  ],
+  "contributes": {
+    "languages": [
+      {
+        "id": "titanium",
+        "aliases": [
+          "Titanium",
+          "titanium",
+          "Ti22",
+          "Ti"
+        ],
+        "extensions": [
+          ".titanium",
+          ".ti"
+        ],
+        "configuration": "./language-configuration.json"
+      }
+    ],
+    "grammars": [
+      {
+        "language": "titanium",
+        "scopeName": "source.titanium",
+        "path": "./syntaxes/titanium.tmLanguage.json"
+      }
+    ],
+    "snippets": [
+      {
+        "language": "titanium",
+        "path": "./snippets/titanium.code-snippets"
+      }
+    ],
+    "commands": [
+      {
+        "command": "titanium.showMenu",
+        "title": "Titanium: Quick Actions Menu",
+        "category": "Titanium"
+      },
+      {
+        "command": "titanium.startDev",
+        "title": "Titanium: Start Live Dev Server",
+        "category": "Titanium"
+      },
+      {
+        "command": "titanium.openStudio",
+        "title": "Titanium: Open Web Studio",
+        "category": "Titanium"
+      },
+      {
+        "command": "titanium.runMigrations",
+        "title": "Titanium: Run SQL Migrations",
+        "category": "Titanium"
+      },
+      {
+        "command": "titanium.build",
+        "title": "Titanium: Build Standalone Package",
+        "category": "Titanium"
+      },
+      {
+        "command": "titanium.info",
+        "title": "Titanium: Project Diagnostics",
+        "category": "Titanium"
+      }
+    ]
+  }
+}

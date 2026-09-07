@@ -1,0 +1,160 @@
+{
+  "$schema": "https://raw.githubusercontent.com/martinring/tmlanguage/master/tmlanguage.json",
+  "name": "Titanium",
+  "scopeName": "source.titanium",
+  "patterns": [
+    {
+      "include": "#frontmatter"
+    },
+    {
+      "include": "#jinja-comments"
+    },
+    {
+      "include": "#jinja-expressions"
+    },
+    {
+      "include": "#jinja-statements"
+    },
+    {
+      "include": "text.html.basic"
+    }
+  ],
+  "repository": {
+    "frontmatter": {
+      "begin": "^(---)\\s*$",
+      "beginCaptures": {
+        "1": {
+          "name": "keyword.operator.frontmatter.titanium punctuation.definition.tag.begin.titanium"
+        }
+      },
+      "end": "^(---)\\s*$",
+      "endCaptures": {
+        "1": {
+          "name": "keyword.operator.frontmatter.titanium punctuation.definition.tag.end.titanium"
+        }
+      },
+      "name": "meta.embedded.block.frontmatter.titanium",
+      "patterns": [
+        {
+          "include": "#titanium-keywords"
+        },
+        {
+          "include": "#titanium-builtins"
+        },
+        {
+          "include": "#titanium-globals"
+        },
+        {
+          "include": "source.js"
+        }
+      ]
+    },
+    "titanium-keywords": {
+      "patterns": [
+        {
+          "match": "\\b(let|const|if|else|for|in|while|loop|return|switch|match|try|catch|throw|import|export|fn|function|break|continue)\\b",
+          "name": "keyword.control.titanium"
+        },
+        {
+          "match": "\\b(true|false|null|undefined|this)\\b",
+          "name": "constant.language.titanium"
+        }
+      ]
+    },
+    "titanium-builtins": {
+      "patterns": [
+        {
+          "match": "\\b(db_query|db_exec|db_first|db_run|db_insert|db_update|db_delete|db_find|db_search)\\b",
+          "name": "support.function.database.titanium entity.name.function.titanium"
+        },
+        {
+          "match": "\\b(cache_set|cache_get|cache_has|cache_delete|cache_clear|cache_keys|cache_stats)\\b",
+          "name": "support.function.cache.titanium entity.name.function.titanium"
+        },
+        {
+          "match": "\\b(defer_job|queue_stats|pubsub_publish|pubsub_history|pubsub_topics)\\b",
+          "name": "support.function.queue.titanium entity.name.function.titanium"
+        },
+        {
+          "match": "\\b(vector_cosine_similarity|vector_rank|media_info|media_data_uri|svg_identicon)\\b",
+          "name": "support.function.ai.titanium entity.name.function.titanium"
+        },
+        {
+          "match": "\\b(sse_event|sse_stream|http_get|http_post|redirect|json|html|validate|rate_limit)\\b",
+          "name": "support.function.network.titanium entity.name.function.titanium"
+        },
+        {
+          "match": "\\b(crypto_hash|crypto_verify|crypto_random_token|json_validate|json_encode|json_decode|redact|mask|array_pluck|array_chunk|array_group_by|str_slug|str_contains|str_starts_with|str_ends_with|clamp)\\b",
+          "name": "support.function.utility.titanium entity.name.function.titanium"
+        }
+      ]
+    },
+    "titanium-globals": {
+      "patterns": [
+        {
+          "match": "\\b(req|params|query|body|session)\\b",
+          "name": "variable.language.special.titanium"
+        }
+      ]
+    },
+    "jinja-comments": {
+      "begin": "{#",
+      "end": "#}",
+      "name": "comment.block.jinja.titanium"
+    },
+    "jinja-expressions": {
+      "begin": "{{",
+      "end": "}}",
+      "beginCaptures": {
+        "0": { "name": "punctuation.section.embedded.begin.jinja.titanium" }
+      },
+      "endCaptures": {
+        "0": { "name": "punctuation.section.embedded.end.jinja.titanium" }
+      },
+      "name": "meta.embedded.expression.jinja.titanium",
+      "patterns": [
+        {
+          "match": "\\|\\s*([a-zA-Z_][a-zA-Z0-9_]*)",
+          "captures": {
+            "1": { "name": "support.function.filter.jinja.titanium" }
+          }
+        },
+        {
+          "include": "#titanium-globals"
+        },
+        {
+          "include": "source.js"
+        }
+      ]
+    },
+    "jinja-statements": {
+      "begin": "{%",
+      "end": "%}",
+      "beginCaptures": {
+        "0": { "name": "punctuation.section.embedded.begin.jinja.titanium" }
+      },
+      "endCaptures": {
+        "0": { "name": "punctuation.section.embedded.end.jinja.titanium" }
+      },
+      "name": "meta.embedded.statement.jinja.titanium",
+      "patterns": [
+        {
+          "match": "\\b(if|elif|else|endif|for|in|endfor|set|include|extends|block|endblock|macro|endmacro)\\b",
+          "name": "keyword.control.jinja.titanium"
+        },
+        {
+          "match": "\\|\\s*([a-zA-Z_][a-zA-Z0-9_]*)",
+          "captures": {
+            "1": { "name": "support.function.filter.jinja.titanium" }
+          }
+        },
+        {
+          "include": "#titanium-globals"
+        },
+        {
+          "include": "source.js"
+        }
+      ]
+    }
+  }
+}

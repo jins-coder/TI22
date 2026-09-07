@@ -1,0 +1,21 @@
+[package]
+name = "titanium"
+version = "6.0.0"
+edition = "2021"
+description = "Titanium (Ti22) - Standalone native web runtime with embedded SQLite, friendly syntax, and single-file SSR"
+authors = ["Titanium Team"]
+
+[dependencies]
+tiny_http = "0.12"
+rusqlite = { version = "0.33", features = ["bundled"] }
+minijinja = { version = "2.7", features = ["loader", "json"] }
+rhai = { version = "1.20", features = ["serde", "sync"] }
+serde = { version = "1.0", features = ["derive"] }
+serde_json = "1.0"
+url = "2.5"
+cookie = "0.18"
+mime_guess = "2.0"
+ureq = { version = "2.10", default-features = false }
+sha2 = "0.10"
+base64 = "0.22"
+toml = "0.8"

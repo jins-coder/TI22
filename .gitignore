@@ -1,0 +1,9 @@
+target/
+.titanium/
+.carbon/
+*.sqlite
+*.sqlite-wal
+*.sqlite-shm
+*.sqlite-journal
+*.log
+node_modules/
