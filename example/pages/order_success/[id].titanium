@@ -1,0 +1,159 @@
+---
+// 1. Fetch Order by ID
+let order_id = params.id;
+let order = db_first("SELECT * FROM orders WHERE id = ?", [order_id]);
+let exists = order != ();
+
+let items = [];
+if exists {
+  items = db_query("SELECT * FROM order_items WHERE order_id = ?", [order_id]);
+}
+---
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Order Confirmation | TITANSTORE</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <link rel="stylesheet" href="/app.css">
+</head>
+<body class="bg-[#090d16] text-slate-100 min-h-screen flex flex-col antialiased selection:bg-sky-500 selection:text-white">
+
+  <!-- Minimal Header -->
+  <header class="border-b border-white/5 py-4 bg-slate-950/80 backdrop-blur">
+    <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 flex items-center justify-between">
+      <a href="/" class="flex items-center gap-2">
+        <div class="w-8 h-8 rounded-lg bg-sky-500 flex items-center justify-center text-slate-950 font-black text-sm">Ti</div>
+        <span class="font-black text-white tracking-wider">TITAN<span class="text-sky-400">STORE</span></span>
+      </a>
+      <a href="/" class="text-xs font-bold text-sky-400 hover:text-sky-300">Continue Shopping →</a>
+    </div>
+  </header>
+
+  <main class="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 py-12 flex-1 w-full">
+    
+    {% if exists %}
+      <!-- Order Success Banner -->
+      <div class="glass-panel p-8 rounded-3xl text-center space-y-4 glow-cyan mb-8">
+        <div class="w-16 h-16 rounded-full bg-emerald-500/20 text-emerald-400 border border-emerald-500/30 flex items-center justify-center mx-auto text-3xl">
+          ✓
+        </div>
+        <div class="space-y-1">
+          <span class="text-xs font-mono font-bold text-sky-400 uppercase tracking-wider">ORDER CONFIRMED</span>
+          <h1 class="text-3xl font-extrabold text-white">Thank You, {{ order.customer_name }}!</h1>
+          <p class="text-xs text-slate-400">Order <strong class="text-white font-mono">{{ order.order_number }}</strong> has been verified & placed into the SQLite fulfillment pipeline.</p>
+        </div>
+
+        <!-- Live Status Tracker -->
+        <div class="pt-6 max-w-xl mx-auto">
+          <div class="grid grid-cols-3 gap-2 text-center text-[10px] font-bold">
+            <div class="p-2 rounded-lg bg-emerald-500/20 text-emerald-300 border border-emerald-500/40">
+              ● 1. Placed
+            </div>
+            <div class="p-2 rounded-lg bg-sky-500/20 text-sky-300 border border-sky-500/40 animate-pulse">
+              ● 2. {{ order.status }}
+            </div>
+            <div class="p-2 rounded-lg bg-slate-900 text-slate-500 border border-white/5">
+              ○ 3. Delivered
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+        
+        <!-- Order Items Invoice -->
+        <div class="glass-card p-6 rounded-2xl space-y-4">
+          <h3 class="text-sm font-bold text-white uppercase tracking-wider pb-3 border-b border-white/10">Itemized Breakdown</h3>
+          
+          <div class="space-y-3">
+            {% for item in items %}
+              <div class="flex items-center justify-between text-xs">
+                <div class="flex items-center gap-3">
+                  <img src="{{ item.image_url }}" alt="{{ item.product_name }}" class="w-10 h-10 rounded-lg object-cover bg-slate-900 shrink-0">
+                  <div>
+                    <h4 class="font-bold text-white truncate max-w-[160px]">{{ item.product_name }}</h4>
+                    <span class="text-slate-400">{{ item.quantity }} × ${{ item.price }}</span>
+                  </div>
+                </div>
+                <span class="font-mono font-bold text-white">${{ item.quantity * item.price }}</span>
+              </div>
+            {% endfor %}
+          </div>
+
+          <div class="pt-4 border-t border-white/10 space-y-1.5 text-xs">
+            <div class="flex justify-between text-slate-400">
+              <span>Subtotal</span>
+              <span class="font-mono text-white">${{ order.subtotal }}</span>
+            </div>
+            {% if order.discount > 0 %}
+              <div class="flex justify-between text-emerald-400">
+                <span>Discount</span>
+                <span class="font-mono">-${{ order.discount }}</span>
+              </div>
+            {% endif %}
+            <div class="flex justify-between text-slate-400">
+              <span>Shipping</span>
+              <span class="font-mono text-white">{% if order.shipping == 0 %}FREE{% else %}${{ order.shipping }}{% endif %}</span>
+            </div>
+            <div class="pt-2 border-t border-white/10 flex justify-between text-base font-bold text-white">
+              <span>Total Paid</span>
+              <span class="font-mono text-sky-400">${{ order.total }}</span>
+            </div>
+          </div>
+        </div>
+
+        <!-- Customer & Delivery Summary -->
+        <div class="glass-card p-6 rounded-2xl space-y-4">
+          <h3 class="text-sm font-bold text-white uppercase tracking-wider pb-3 border-b border-white/10">Fulfillment Details</h3>
+
+          <div class="space-y-3 text-xs">
+            <div>
+              <span class="text-slate-400">Recipient:</span>
+              <div class="font-bold text-white mt-0.5">{{ order.customer_name }}</div>
+              <div class="text-slate-400">{{ order.customer_email }}</div>
+            </div>
+
+            <div>
+              <span class="text-slate-400">Delivery Address:</span>
+              <div class="font-bold text-white mt-0.5">{{ order.customer_address }}</div>
+              <div class="text-slate-400">{{ order.customer_city }}</div>
+            </div>
+
+            <div>
+              <span class="text-slate-400">Payment Gateway:</span>
+              <div class="font-bold text-sky-400 mt-0.5">{{ order.payment_method }} (Verified)</div>
+            </div>
+
+            <div>
+              <span class="text-slate-400">Order Placed At:</span>
+              <div class="font-mono text-slate-300 mt-0.5">{{ order.created_at }}</div>
+            </div>
+          </div>
+
+          <div class="pt-4 border-t border-white/10 flex gap-3">
+            <button onclick="window.print()" class="w-full py-2.5 rounded-xl bg-slate-800 hover:bg-slate-700 text-xs font-bold text-slate-200 border border-white/10 transition">
+              🖨️ Print Invoice
+            </button>
+            <a href="/" class="w-full py-2.5 rounded-xl bg-sky-500 hover:bg-sky-400 text-xs font-bold text-slate-950 text-center transition">
+              Storefront
+            </a>
+          </div>
+
+        </div>
+
+      </div>
+
+    {% else %}
+      <div class="text-center py-20 glass-panel rounded-2xl">
+        <h2 class="text-xl font-bold text-rose-400">Order Not Found</h2>
+        <p class="text-xs text-slate-400 mt-2 mb-4">No order was found with ID #{{ order_id }}.</p>
+        <a href="/" class="px-5 py-2 bg-sky-500 text-slate-950 rounded-xl text-xs font-bold">Return Home</a>
+      </div>
+    {% endif %}
+
+  </main>
+
+</body>
+</html>

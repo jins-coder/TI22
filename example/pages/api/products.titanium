@@ -1,0 +1,20 @@
+---
+let search_q = if query.q != () { query.q } else { "" };
+let category = if query.category != () { query.category } else { "" };
+
+let products = [];
+if search_q != "" {
+  let search_param = "%" + search_q + "%";
+  products = db_query("SELECT id, name, slug, category, price, compare_at_price, stock, rating, reviews_count, image_url, badge FROM products WHERE (name LIKE ? OR description LIKE ?) ORDER BY id DESC", [search_param, search_param]);
+} else if category != "" && category != "All" {
+  products = db_query("SELECT id, name, slug, category, price, compare_at_price, stock, rating, reviews_count, image_url, badge FROM products WHERE category = ? ORDER BY id DESC", [category]);
+} else {
+  products = db_query("SELECT id, name, slug, category, price, compare_at_price, stock, rating, reviews_count, image_url, badge FROM products ORDER BY id DESC");
+}
+
+return json(200, #{
+  status: "success",
+  count: products.len(),
+  data: products
+});
+---

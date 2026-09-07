@@ -1,125 +1,322 @@
 ---
-// 1. Ensure SQLite Table exists
-db_exec("CREATE TABLE IF NOT EXISTS users (id INTEGER PRIMARY KEY AUTOINCREMENT, name TEXT NOT NULL, email TEXT NOT NULL UNIQUE, role TEXT DEFAULT 'developer', created_at DATETIME DEFAULT CURRENT_TIMESTAMP);");
+// 1. Session identifier for Cart
+let sid = session.id();
 
-// 2. Handle POST Form Submission (Zero-reload Turbo submission)
-if req.method == "POST" {
-  let action = body.action;
-  let id = body.id;
-  let name = body.name;
-  let email = body.email;
-  let role = if body.role != () && body.role != "" { body.role } else { "developer" };
+// 2. Filter Parameters
+let selected_cat = if query.category != () && query.category != "" { query.category } else { "All" };
+let search_q = if query.q != () && query.q != "" { query.q } else { "" };
 
-  if action == "delete" && id != () && id != "" {
-    db_run("DELETE FROM users WHERE id = ?", [id]);
-    session.flash("msg", "🗑️ User deleted from SQLite!");
-  } else if name != () && name != "" && email != () && email != "" {
-    db_run("INSERT INTO users (name, email, role) VALUES (?, ?, ?)", [name, email, role]);
-    session.flash("msg", "✨ New user created in native Titanium engine!");
-  }
-
-  return redirect("/");
+// 3. Query Products with Filters
+let products = [];
+if search_q != "" {
+  let search_param = "%" + search_q + "%";
+  products = db_query("SELECT * FROM products WHERE (name LIKE ? OR description LIKE ? OR category LIKE ?) ORDER BY is_featured DESC, id DESC", [search_param, search_param, search_param]);
+} else if selected_cat != "All" {
+  products = db_query("SELECT * FROM products WHERE category = ? ORDER BY is_featured DESC, id DESC", [selected_cat]);
+} else {
+  products = db_query("SELECT * FROM products ORDER BY is_featured DESC, id DESC");
 }
 
-// 3. Query Database
-let users = db_query("SELECT * FROM users ORDER BY id DESC");
-let count = users.len();
-let msg = session.flash("msg");
+// 4. Cart summary count for nav badge
+let cart_count_res = db_first("SELECT SUM(quantity) as total_items FROM cart_items WHERE session_id = ?", [sid]);
+let cart_count = if cart_count_res != () && cart_count_res.total_items != () { cart_count_res.total_items } else { 0 };
+
+let categories = ["All", "Peripherals", "Wearables", "Hardware", "Audio", "Gear"];
+let flash_msg = session.flash("msg");
 ---
 <!DOCTYPE html>
-<html lang="en">
+<html lang="en" class="h-full">
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Titanium (Ti22) | Native Web Runtime</title>
+  <title>TITANIUM STORE | Grade 5 Titanium Gear & Hardware</title>
+  <!-- Tailwind Play CDN -->
+  <script src="https://cdn.tailwindcss.com"></script>
+  <script>
+    tailwind.config = {
+      darkMode: 'class',
+      theme: {
+        extend: {
+          colors: {
+            ti: {
+              bg: '#090d16',
+              card: '#0f172a',
+              cyan: '#38bdf8',
+              indigo: '#6366f1',
+              emerald: '#10b981',
+              rose: '#f43f5e'
+            }
+          }
+        }
+      }
+    }
+  </script>
   <link rel="stylesheet" href="/app.css">
-  <link rel="preconnect" href="https://fonts.googleapis.com">
-  <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;600;700;800&display=swap">
 </head>
-<body>
-  <div class="container">
-    <header class="hero">
-      <div class="badge">⚡ TITANIUM (TI22) NATIVE ENGINE</div>
-      <h1>Titanium Web Runtime</h1>
-      <p class="subtitle">Standalone Native Binary • Friendly Clean Syntax • Embedded SQLite • Turbo SPA</p>
-      <div style="margin-top: 15px; display: flex; gap: 10px; justify-content: center; flex-wrap: wrap;">
-        <a href="/spa_demo" class="btn btn-primary" style="font-size: 0.85rem; padding: 6px 14px; text-decoration: none;">⚡ Turbo SPA Demo</a>
-        <a href="/__titanium_studio" class="btn" style="font-size: 0.85rem; padding: 6px 14px; text-decoration: none; background: rgba(168, 85, 247, 0.15); border: 1px solid rgba(168, 85, 247, 0.3); color: #c084fc;">🛠️ Web Studio</a>
-        <a href="/nextgen" class="btn" style="font-size: 0.85rem; padding: 6px 14px; text-decoration: none; background: rgba(56, 189, 248, 0.15); border: 1px solid rgba(56, 189, 248, 0.3); color: #38bdf8;">🚀 Next-Gen Omniverse</a>
-        <a href="/php_features" class="btn" style="font-size: 0.85rem; padding: 6px 14px; text-decoration: none; background: rgba(255,255,255,0.08); border: 1px solid rgba(255,255,255,0.15);">🐘 PHP 8.1 - 8.5 Primitives</a>
-      </div>
-    </header>
+<body class="bg-[#090d16] text-slate-100 min-h-screen flex flex-col antialiased selection:bg-sky-500 selection:text-white">
 
-    {% if msg %}
-      <div class="alert alert-success">{{ msg }}</div>
-    {% endif %}
+  <!-- Top Announcement Bar -->
+  <div class="bg-gradient-to-r from-sky-500/20 via-indigo-500/20 to-sky-500/20 border-b border-white/5 py-2 px-4 text-center text-xs font-semibold text-sky-300 flex items-center justify-center gap-2">
+    <span>⚡ TITANIUM DROP: Use code <span class="bg-sky-400/20 px-2 py-0.5 rounded text-white font-mono">TITANIUM20</span> for 20% off all Grade 5 titanium hardware!</span>
+  </div>
 
-    <div class="grid">
-      <!-- Create User Card -->
-      <div class="card">
-        <h2>➕ Add New User</h2>
-        <p class="card-desc">Submits to native Rust/C SQLite engine with zero full-page reloads.</p>
-        <form method="POST" action="/" class="form">
-          <div class="form-group">
-            <label>Full Name</label>
-            <input type="text" name="name" placeholder="Grace Hopper" required>
+  <!-- Navigation Bar -->
+  <header class="sticky top-0 z-50 glass-header">
+    <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+      <div class="flex items-center justify-between h-16 gap-4">
+        
+        <!-- Brand Logo -->
+        <a href="/" class="flex items-center gap-2.5 group text-decoration-none">
+          <div class="w-9 h-9 rounded-xl bg-gradient-to-tr from-sky-400 to-indigo-500 flex items-center justify-center text-slate-950 font-black text-lg shadow-lg shadow-sky-500/20 group-hover:scale-105 transition">
+            Ti
           </div>
-          <div class="form-group">
-            <label>Email Address</label>
-            <input type="email" name="email" placeholder="grace@navy.mil" required>
+          <div>
+            <span class="text-lg font-black tracking-wider text-white">TITAN<span class="text-sky-400">STORE</span></span>
+            <span class="hidden sm:inline-block text-[10px] font-mono text-sky-400/70 ml-1.5 px-1.5 py-0.5 rounded bg-sky-500/10 border border-sky-500/20">v6.0</span>
           </div>
-          <div class="form-group">
-            <label>Role</label>
-            <select name="role">
-              <option value="systems">Systems Architect</option>
-              <option value="security">Security Engineer</option>
-              <option value="developer">Core Developer</option>
-            </select>
-          </div>
-          <button type="submit" class="btn btn-primary">Create User in SQLite</button>
+        </a>
+
+        <!-- Live Search Bar -->
+        <form method="GET" action="/" class="flex-1 max-w-md hidden md:flex items-center relative">
+          <input type="text" name="q" value="{{ search_q }}" placeholder="Search titanium hardware, headphones, EDC..." class="w-full bg-slate-900/80 border border-white/10 rounded-full py-1.5 pl-9 pr-4 text-sm text-white placeholder-slate-400 focus:outline-none focus:border-sky-400 focus:ring-1 focus:ring-sky-400 transition">
+          <svg class="w-4 h-4 text-slate-400 absolute left-3 pointer-events-none" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"></path></svg>
         </form>
+
+        <!-- Navigation Links & Cart Button -->
+        <div class="flex items-center gap-3">
+          <a href="/admin" class="hidden sm:flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-semibold text-slate-300 hover:text-white bg-slate-800/60 border border-white/10 hover:border-sky-500/40 transition">
+            <svg class="w-3.5 h-3.5 text-sky-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z"></path><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"></path></svg>
+            <span>Admin Portal</span>
+          </a>
+
+          <a href="/cart" class="relative flex items-center gap-2 px-4 py-2 rounded-xl bg-gradient-to-r from-sky-500 to-indigo-600 hover:from-sky-400 hover:to-indigo-500 text-white text-sm font-bold shadow-lg shadow-sky-500/25 hover:shadow-sky-500/40 transition">
+            <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M16 11V7a4 4 0 00-8 0v4M5 9h14l1 12H4L5 9z"></path></svg>
+            <span>Cart</span>
+            {% if cart_count > 0 %}
+              <span class="bg-white text-slate-950 text-xs font-black px-1.5 py-0.5 rounded-full font-mono">{{ cart_count }}</span>
+            {% endif %}
+          </a>
+        </div>
+
+      </div>
+    </div>
+  </header>
+
+  <!-- Flash Notification Toast -->
+  {% if flash_msg %}
+    <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 mt-4">
+      <div class="bg-emerald-500/10 border border-emerald-500/30 text-emerald-300 px-4 py-3 rounded-xl flex items-center justify-between gap-3 text-sm font-medium animate-pulse">
+        <div class="flex items-center gap-2">
+          <span>✨</span>
+          <span>{{ flash_msg }}</span>
+        </div>
+        <a href="/cart" class="text-xs font-bold text-emerald-400 underline hover:text-emerald-200">View Cart →</a>
+      </div>
+    </div>
+  {% endif %}
+
+  <!-- Main Storefront Hero Banner -->
+  <section class="relative overflow-hidden py-12 lg:py-16">
+    <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+      <div class="grid grid-cols-1 lg:grid-cols-12 gap-8 items-center">
+        
+        <div class="lg:col-span-7 space-y-6">
+          <div class="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-sky-500/10 border border-sky-500/20 text-sky-400 text-xs font-semibold">
+            <span class="w-2 h-2 rounded-full bg-sky-400 animate-ping"></span>
+            AEROSPACE GRADE 5 TITANIUM
+          </div>
+          
+          <h1 class="text-4xl sm:text-5xl lg:text-6xl font-extrabold tracking-tight text-white leading-tight">
+            Engineered for <span class="bg-gradient-to-r from-sky-400 via-indigo-300 to-sky-400 bg-clip-text text-transparent">Extreme Performance</span>.
+          </h1>
+          
+          <p class="text-slate-300 text-base sm:text-lg max-w-xl leading-relaxed">
+            Ultra-lightweight mechanical keyboards, cybernetic hardware, and precision EDC engineered from solid billet titanium with micro-tolerance CNC machining.
+          </p>
+
+          <div class="flex flex-wrap gap-3 pt-2">
+            <a href="#catalog" class="px-6 py-3 rounded-xl bg-sky-500 hover:bg-sky-400 text-slate-950 font-bold text-sm shadow-lg shadow-sky-500/30 hover:scale-105 transition">
+              Explore Catalog ↓
+            </a>
+            <a href="/admin" class="px-6 py-3 rounded-xl bg-slate-800/80 hover:bg-slate-700/80 border border-white/10 text-white font-semibold text-sm transition">
+              Store Manager
+            </a>
+          </div>
+
+          <!-- Feature Pills -->
+          <div class="grid grid-cols-3 gap-3 pt-4 border-t border-white/5">
+            <div>
+              <div class="text-white font-bold text-sm">Grade 5 Ti</div>
+              <div class="text-xs text-slate-400">Billet CNC Machined</div>
+            </div>
+            <div>
+              <div class="text-white font-bold text-sm">Turbo SPA</div>
+              <div class="text-xs text-slate-400">0ms Page Flashes</div>
+            </div>
+            <div>
+              <div class="text-white font-bold text-sm">SQLite WAL</div>
+              <div class="text-xs text-slate-400">Microsecond Speed</div>
+            </div>
+          </div>
+        </div>
+
+        <div class="lg:col-span-5 relative">
+          <div class="relative mx-auto rounded-2xl overflow-hidden border border-white/10 shadow-2xl glass-panel p-2 glow-cyan">
+            <img src="https://images.unsplash.com/photo-1587829741301-dc798b83add3?auto=format&fit=crop&w=1000&q=80" alt="Titanium Apex Keyboard" class="w-full h-72 sm:h-80 object-cover rounded-xl">
+            <div class="p-4 flex items-center justify-between">
+              <div>
+                <span class="text-xs font-mono text-sky-400 font-bold">LIMITED EDITION</span>
+                <h3 class="text-white font-bold text-base">Titanium Apex Keyboard</h3>
+              </div>
+              <div class="text-right">
+                <span class="text-xl font-black text-white font-mono">$349.00</span>
+              </div>
+            </div>
+          </div>
+        </div>
+
+      </div>
+    </div>
+  </section>
+
+  <!-- Category Pills Filter & Catalog Section -->
+  <section id="catalog" class="py-8 max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 flex-1 w-full">
+    
+    <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-4 pb-6 border-b border-white/5">
+      <div>
+        <h2 class="text-2xl font-bold text-white tracking-tight">Product Catalog</h2>
+        <p class="text-xs text-slate-400 mt-1">Showing {{ products.len() }} precision titanium items</p>
       </div>
 
-      <!-- User List Card -->
-      <div class="card">
-        <div class="card-header-flex">
-          <h2>👥 Native SQLite Users ({{ count }})</h2>
-          <a href="/api/users" class="api-link" target="_blank">JSON API ↗</a>
-        </div>
-        <p class="card-desc">Queried directly from embedded SQLite in microseconds.</p>
-
-        {% if count == 0 %}
-          <div class="empty-state">
-            <p>No users yet. Add your first user on the left!</p>
-          </div>
-        {% else %}
-          <div class="user-list">
-            {% for u in users %}
-              <div class="user-item">
-                <div class="user-info">
-                  <span class="user-name">
-                    <a href="/users/{{ u.id }}" class="user-link">{{ u.name }}</a>
-                  </span>
-                  <span class="user-email">{{ u.email }}</span>
-                </div>
-                <div class="user-meta">
-                  <span class="role-tag">{{ u.role }}</span>
-                  <form method="POST" action="/" style="display:inline;">
-                    <input type="hidden" name="action" value="delete">
-                    <input type="hidden" name="id" value="{{ u.id }}">
-                    <button type="submit" class="btn-delete" title="Delete User">✕</button>
-                  </form>
-                </div>
-              </div>
-            {% endfor %}
-          </div>
-        {% endif %}
+      <!-- Categories Filter Tabs -->
+      <div class="flex items-center gap-1.5 overflow-x-auto pb-2 sm:pb-0 scrollbar-none">
+        {% for cat in categories %}
+          <a href="/?category={{ cat }}" class="px-3.5 py-1.5 rounded-full text-xs font-semibold whitespace-nowrap transition {% if selected_cat == cat %} bg-sky-500 text-slate-950 shadow-md shadow-sky-500/20 {% else %} bg-slate-900/80 text-slate-400 hover:text-white border border-white/5 hover:border-white/20 {% endif %}">
+            {{ cat }}
+          </a>
+        {% endfor %}
       </div>
     </div>
 
-    <footer class="footer">
-      <p>Powered by <strong>Titanium (Ti22)</strong> • Native Standalone Rust & SQLite Web Runtime</p>
-    </footer>
-  </div>
+    <!-- Product Grid -->
+    <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6 mt-8">
+      {% for p in products %}
+        <div class="glass-card flex flex-col justify-between overflow-hidden group">
+          
+          <div class="relative">
+            <!-- Image with Zoom effect -->
+            <a href="/product/{{ p.id }}" class="block aspect-video sm:aspect-square w-full overflow-hidden bg-slate-900/50">
+              <img src="{{ p.image_url }}" alt="{{ p.name }}" class="w-full h-full object-cover group-hover:scale-105 transition duration-300">
+            </a>
+
+            <!-- Badge (if any) -->
+            {% if p.badge != "" %}
+              <span class="absolute top-3 left-3 px-2.5 py-1 rounded-md text-[10px] font-black uppercase tracking-wider bg-sky-500 text-slate-950 shadow-md shadow-sky-500/30">
+                {{ p.badge }}
+              </span>
+            {% endif %}
+
+            <!-- Category tag -->
+            <span class="absolute top-3 right-3 px-2 py-0.5 rounded-md text-[10px] font-semibold bg-slate-950/80 backdrop-blur border border-white/10 text-slate-300">
+              {{ p.category }}
+            </span>
+          </div>
+
+          <!-- Product Details Body -->
+          <div class="p-5 flex-1 flex flex-col justify-between">
+            <div>
+              <div class="flex items-center gap-1 text-amber-400 text-xs font-semibold mb-1.5">
+                <span>★</span>
+                <span>{{ p.rating }}</span>
+                <span class="text-slate-500">({{ p.reviews_count }})</span>
+              </div>
+
+              <h3 class="text-base font-bold text-white group-hover:text-sky-400 transition">
+                <a href="/product/{{ p.id }}">{{ p.name }}</a>
+              </h3>
+              
+              <p class="text-xs text-slate-400 mt-2 line-clamp-2 leading-relaxed">
+                {{ p.description }}
+              </p>
+            </div>
+
+            <!-- Price & Add-To-Cart Action Form -->
+            <div class="mt-5 pt-4 border-t border-white/5 flex items-center justify-between gap-3">
+              <div>
+                <div class="text-lg font-black text-white font-mono">${{ p.price }}</div>
+                {% if p.compare_at_price > p.price %}
+                  <div class="text-xs text-slate-500 line-through font-mono">${{ p.compare_at_price }}</div>
+                {% endif %}
+              </div>
+
+              <!-- Instant Zero-Reload Turbo Add-To-Cart -->
+              <form method="POST" action="/cart" class="m-0">
+                <input type="hidden" name="action" value="add">
+                <input type="hidden" name="product_id" value="{{ p.id }}">
+                <input type="hidden" name="quantity" value="1">
+                <button type="submit" class="px-3.5 py-2 rounded-xl bg-slate-800 hover:bg-sky-500 text-sky-400 hover:text-slate-950 text-xs font-bold border border-sky-500/20 hover:border-sky-400 transition flex items-center gap-1.5 cursor-pointer shadow-sm">
+                  <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4"></path></svg>
+                  <span>Add to Cart</span>
+                </button>
+              </form>
+            </div>
+
+          </div>
+
+        </div>
+      {% endfor %}
+    </div>
+
+  </section>
+
+  <!-- Store Footer -->
+  <footer class="border-t border-white/5 bg-slate-950/80 mt-16 py-12">
+    <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 grid grid-cols-1 md:grid-cols-4 gap-8">
+      
+      <div class="space-y-3">
+        <div class="flex items-center gap-2">
+          <div class="w-7 h-7 rounded-lg bg-sky-500 flex items-center justify-center text-slate-950 font-black text-sm">Ti</div>
+          <span class="font-black text-white tracking-wider">TITAN<span class="text-sky-400">STORE</span></span>
+        </div>
+        <p class="text-xs text-slate-400 leading-relaxed">
+          High-performance titanium equipment and cybernetic hardware powered by the Titanium (Ti22) Native Web Runtime.
+        </p>
+      </div>
+
+      <div>
+        <h4 class="text-xs font-bold text-white uppercase tracking-wider mb-3">Shop Categories</h4>
+        <ul class="space-y-2 text-xs text-slate-400">
+          <li><a href="/?category=Peripherals" class="hover:text-sky-400 transition">Mechanical Keyboards</a></li>
+          <li><a href="/?category=Wearables" class="hover:text-sky-400 transition">Chrono Wearables</a></li>
+          <li><a href="/?category=Hardware" class="hover:text-sky-400 transition">CyberDeck Hardware</a></li>
+          <li><a href="/?category=Audio" class="hover:text-sky-400 transition">Studio Planar Audio</a></li>
+        </ul>
+      </div>
+
+      <div>
+        <h4 class="text-xs font-bold text-white uppercase tracking-wider mb-3">Ecosystem & Engine</h4>
+        <ul class="space-y-2 text-xs text-slate-400">
+          <li><a href="/admin" class="hover:text-sky-400 transition">Store Admin Dashboard</a></li>
+          <li><a href="/__titanium_studio" class="hover:text-sky-400 transition">Titanium Web Studio</a></li>
+          <li><a href="/api/products" class="hover:text-sky-400 transition">Products REST API</a></li>
+        </ul>
+      </div>
+
+      <div>
+        <h4 class="text-xs font-bold text-white uppercase tracking-wider mb-3">Newsletter</h4>
+        <p class="text-xs text-slate-400 mb-2">Get secret titanium drop alerts.</p>
+        <form onsubmit="event.preventDefault(); alert('Subscribed to Titanium drops!');" class="flex gap-2">
+          <input type="email" placeholder="you@cyber.io" required class="bg-slate-900 border border-white/10 rounded-lg px-3 py-1.5 text-xs text-white focus:outline-none focus:border-sky-400 flex-1">
+          <button type="submit" class="bg-sky-500 text-slate-950 font-bold px-3 py-1.5 rounded-lg text-xs hover:bg-sky-400 transition">Join</button>
+        </form>
+      </div>
+
+    </div>
+
+    <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 mt-8 pt-6 border-t border-white/5 text-center text-xs text-slate-500">
+      © 2026 Titanium (Ti22) Native Web Runtime • Turbo SPA SSR Engine
+    </div>
+  </footer>
+
 </body>
 </html>

@@ -1,0 +1,281 @@
+---
+// 1. Session ID for Cart Isolation
+let sid = session.id();
+
+// 2. Handle POST Actions (Add, Update, Remove, Coupon)
+if req.method == "POST" {
+  let action = body.action;
+
+  if action == "add" {
+    let pid = body.product_id;
+    let qty = if body.quantity != () && body.quantity != "" { parse_int(body.quantity) } else { 1 };
+    
+    let existing = db_first("SELECT id, quantity FROM cart_items WHERE session_id = ? AND product_id = ?", [sid, pid]);
+    if existing != () {
+      let new_qty = existing.quantity + qty;
+      db_run("UPDATE cart_items SET quantity = ? WHERE id = ?", [new_qty, existing.id]);
+    } else {
+      db_run("INSERT INTO cart_items (session_id, product_id, quantity) VALUES (?, ?, ?)", [sid, pid, qty]);
+    }
+    session.flash("msg", "🛒 Added item to your shopping cart!");
+    return redirect("/cart");
+  } else if action == "update" {
+    let cid = body.cart_id;
+    let qty = parse_int(body.quantity);
+    if qty <= 0 {
+      db_run("DELETE FROM cart_items WHERE id = ? AND session_id = ?", [cid, sid]);
+    } else {
+      db_run("UPDATE cart_items SET quantity = ? WHERE id = ? AND session_id = ?", [qty, cid, sid]);
+    }
+    session.flash("msg", "🔄 Cart quantity updated!");
+    return redirect("/cart");
+  } else if action == "remove" {
+    let cid = body.cart_id;
+    db_run("DELETE FROM cart_items WHERE id = ? AND session_id = ?", [cid, sid]);
+    session.flash("msg", "🗑️ Item removed from cart.");
+    return redirect("/cart");
+  } else if action == "coupon" {
+    let code = if body.coupon_code != () { body.coupon_code.to_upper().trim() } else { "" };
+    if code == "TITANIUM20" || code == "TI22" {
+      session.set("coupon_code", code);
+      session.set("discount_percent", 0.20);
+      session.flash("msg", "🎉 Coupon applied! 20% Discount unlocked!");
+    } else {
+      session.flash("err", "❌ Invalid coupon code. Try TITANIUM20");
+    }
+    return redirect("/cart");
+  } else if action == "remove_coupon" {
+    session.remove("coupon_code");
+    session.remove("discount_percent");
+    session.flash("msg", "Coupon removed.");
+    return redirect("/cart");
+  }
+}
+
+// 3. Fetch Cart Items joined with Products
+let cart_items = db_query("SELECT c.id as cart_id, c.quantity, p.id as product_id, p.name, p.price, p.image_url, p.category, (c.quantity * p.price) as line_total FROM cart_items c JOIN products p ON c.product_id = p.id WHERE c.session_id = ? ORDER BY c.id DESC", [sid]);
+
+let subtotal = 0.0;
+for item in cart_items {
+  subtotal += item.line_total;
+}
+
+let discount_percent = session.get("discount_percent");
+let discount_rate = if discount_percent != () { discount_percent } else { 0.0 };
+let discount_amount = subtotal * discount_rate;
+let applied_coupon = session.get("coupon_code");
+
+let shipping_cost = if subtotal > 150.0 || subtotal == 0.0 { 0.0 } else { 15.0 };
+let total = (subtotal - discount_amount) + shipping_cost;
+
+let flash_msg = session.flash("msg");
+let flash_err = session.flash("err");
+---
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Shopping Cart | TITANSTORE</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <link rel="stylesheet" href="/app.css">
+</head>
+<body class="bg-[#090d16] text-slate-100 min-h-screen flex flex-col antialiased selection:bg-sky-500 selection:text-white">
+
+  <!-- Navigation Bar -->
+  <header class="sticky top-0 z-50 glass-header">
+    <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+      <div class="flex items-center justify-between h-16 gap-4">
+        
+        <a href="/" class="flex items-center gap-2.5 group">
+          <div class="w-9 h-9 rounded-xl bg-gradient-to-tr from-sky-400 to-indigo-500 flex items-center justify-center text-slate-950 font-black text-lg shadow-lg shadow-sky-500/20 group-hover:scale-105 transition">
+            Ti
+          </div>
+          <div>
+            <span class="text-lg font-black tracking-wider text-white">TITAN<span class="text-sky-400">STORE</span></span>
+          </div>
+        </a>
+
+        <div class="flex items-center gap-3">
+          <a href="/" class="text-xs font-semibold text-slate-300 hover:text-white px-3 py-1.5 rounded-lg bg-slate-800/60 border border-white/10 transition">
+            ← Continue Shopping
+          </a>
+        </div>
+
+      </div>
+    </div>
+  </header>
+
+  <!-- Flash Messages -->
+  <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 mt-4 w-full">
+    {% if flash_msg %}
+      <div class="bg-emerald-500/10 border border-emerald-500/30 text-emerald-300 px-4 py-3 rounded-xl text-sm font-medium mb-4">
+        ✨ {{ flash_msg }}
+      </div>
+    {% endif %}
+    {% if flash_err %}
+      <div class="bg-rose-500/10 border border-rose-500/30 text-rose-300 px-4 py-3 rounded-xl text-sm font-medium mb-4">
+        {{ flash_err }}
+      </div>
+    {% endif %}
+  </div>
+
+  <!-- Cart Content -->
+  <main class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8 flex-1 w-full">
+    
+    <div class="flex items-center justify-between pb-6 border-b border-white/5 mb-8">
+      <div>
+        <h1 class="text-2xl sm:text-3xl font-extrabold text-white tracking-tight">Your Titanium Cart</h1>
+        <p class="text-xs text-slate-400 mt-1">Zero-reload Turbo SPA cart management</p>
+      </div>
+      <span class="text-xs font-mono px-3 py-1 bg-sky-500/10 text-sky-400 border border-sky-500/20 rounded-full font-bold">
+        {{ cart_items.len() }} Item(s)
+      </span>
+    </div>
+
+    {% if cart_items.len() > 0 %}
+      <div class="grid grid-cols-1 lg:grid-cols-12 gap-8">
+        
+        <!-- Cart Line Items List -->
+        <div class="lg:col-span-8 space-y-4">
+          {% for item in cart_items %}
+            <div class="glass-card p-4 rounded-xl flex flex-col sm:flex-row items-center justify-between gap-4">
+              
+              <div class="flex items-center gap-4 w-full sm:w-auto">
+                <a href="/product/{{ item.product_id }}" class="w-20 h-20 rounded-lg overflow-hidden bg-slate-900 shrink-0">
+                  <img src="{{ item.image_url }}" alt="{{ item.name }}" class="w-full h-full object-cover">
+                </a>
+                <div>
+                  <span class="text-[10px] font-bold text-sky-400 uppercase tracking-wider">{{ item.category }}</span>
+                  <h3 class="font-bold text-white text-sm hover:text-sky-400">
+                    <a href="/product/{{ item.product_id }}">{{ item.name }}</a>
+                  </h3>
+                  <div class="text-xs font-mono text-slate-400 mt-1">${{ item.price }} / unit</div>
+                </div>
+              </div>
+
+              <!-- Quantity Controls & Line Total -->
+              <div class="flex items-center justify-between sm:justify-end gap-6 w-full sm:w-auto pt-3 sm:pt-0 border-t sm:border-t-0 border-white/5">
+                
+                <!-- Quantity update form -->
+                <form method="POST" action="/cart" class="flex items-center gap-2 m-0">
+                  <input type="hidden" name="action" value="update">
+                  <input type="hidden" name="cart_id" value="{{ item.cart_id }}">
+                  <label class="text-xs text-slate-400 sm:hidden">Qty:</label>
+                  <select name="quantity" onchange="this.form.requestSubmit()" class="bg-slate-900 border border-white/10 rounded-lg px-2.5 py-1 text-xs text-white focus:outline-none focus:border-sky-400">
+                    <option value="1" {% if item.quantity == 1 %}selected{% endif %}>1</option>
+                    <option value="2" {% if item.quantity == 2 %}selected{% endif %}>2</option>
+                    <option value="3" {% if item.quantity == 3 %}selected{% endif %}>3</option>
+                    <option value="4" {% if item.quantity == 4 %}selected{% endif %}>4</option>
+                    <option value="5" {% if item.quantity == 5 %}selected{% endif %}>5</option>
+                  </select>
+                </form>
+
+                <div class="font-mono font-bold text-base text-white">
+                  ${{ item.line_total }}
+                </div>
+
+                <!-- Remove item form -->
+                <form method="POST" action="/cart" class="m-0">
+                  <input type="hidden" name="action" value="remove">
+                  <input type="hidden" name="cart_id" value="{{ item.cart_id }}">
+                  <button type="submit" class="p-1.5 text-slate-500 hover:text-rose-400 transition" title="Remove item">
+                    <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"></path></svg>
+                  </button>
+                </form>
+
+              </div>
+
+            </div>
+          {% endfor %}
+
+          <!-- Trust Badges -->
+          <div class="p-4 rounded-xl bg-slate-900/40 border border-white/5 grid grid-cols-2 sm:grid-cols-3 gap-4 text-center text-xs text-slate-400 mt-6">
+            <div>🛡️ 256-Bit SSL Checkout</div>
+            <div>⚡ 2-Day Air Express</div>
+            <div>🔄 30-Day Hassle Returns</div>
+          </div>
+        </div>
+
+        <!-- Order Summary & Checkout Card -->
+        <div class="lg:col-span-4 space-y-6">
+          <div class="glass-panel p-6 rounded-2xl glow-indigo space-y-5">
+            <h2 class="text-lg font-bold text-white tracking-tight pb-3 border-b border-white/10">Order Summary</h2>
+
+            <!-- Coupon Code Form -->
+            <form method="POST" action="/cart" class="space-y-2">
+              <input type="hidden" name="action" value="coupon">
+              <label class="text-xs font-semibold text-slate-300">Discount Code</label>
+              <div class="flex gap-2">
+                <input type="text" name="coupon_code" placeholder="TITANIUM20" value="{% if applied_coupon %}{{ applied_coupon }}{% endif %}" class="bg-slate-900 border border-white/10 rounded-lg px-3 py-1.5 text-xs text-white focus:outline-none focus:border-sky-400 uppercase font-mono flex-1">
+                <button type="submit" class="px-3 py-1.5 bg-slate-800 hover:bg-slate-700 text-sky-400 font-bold text-xs rounded-lg border border-white/10 transition">Apply</button>
+              </div>
+            </form>
+
+            {% if applied_coupon %}
+              <div class="flex items-center justify-between text-xs bg-emerald-500/10 border border-emerald-500/30 p-2 rounded-lg text-emerald-300">
+                <span>Code <strong>{{ applied_coupon }}</strong> (20% OFF)</span>
+                <form method="POST" action="/cart" class="m-0">
+                  <input type="hidden" name="action" value="remove_coupon">
+                  <button type="submit" class="text-rose-400 underline font-bold">Remove</button>
+                </form>
+              </div>
+            {% endif %}
+
+            <!-- Costs Breakdown -->
+            <div class="space-y-2.5 text-xs pt-2">
+              <div class="flex justify-between text-slate-400">
+                <span>Subtotal</span>
+                <span class="font-mono text-white">${{ subtotal }}</span>
+              </div>
+              
+              {% if discount_amount > 0 %}
+                <div class="flex justify-between text-emerald-400">
+                  <span>Discount (20%)</span>
+                  <span class="font-mono">-${{ discount_amount }}</span>
+                </div>
+              {% endif %}
+
+              <div class="flex justify-between text-slate-400">
+                <span>Shipping</span>
+                <span class="font-mono text-white">{% if shipping_cost == 0 %}FREE{% else %}${{ shipping_cost }}{% endif %}</span>
+              </div>
+              
+              <div class="pt-3 border-t border-white/10 flex justify-between text-base font-bold text-white">
+                <span>Estimated Total</span>
+                <span class="font-mono text-sky-400 text-xl">${{ total }}</span>
+              </div>
+            </div>
+
+            <!-- Proceed to Checkout Button -->
+            <a href="/checkout" class="w-full py-3.5 px-4 rounded-xl bg-gradient-to-r from-sky-500 to-indigo-600 hover:from-sky-400 hover:to-indigo-500 text-white font-bold text-sm shadow-xl shadow-sky-500/25 flex items-center justify-center gap-2 transition">
+              <span>Proceed to Checkout →</span>
+            </a>
+
+          </div>
+        </div>
+
+      </div>
+
+    {% else %}
+      <!-- Empty Cart State -->
+      <div class="text-center py-24 glass-panel max-w-lg mx-auto p-8 rounded-2xl">
+        <div class="w-16 h-16 bg-slate-800 text-sky-400 rounded-full flex items-center justify-center mx-auto mb-4 text-2xl">
+          🛒
+        </div>
+        <h2 class="text-2xl font-bold text-white mb-2">Your Cart is Empty</h2>
+        <p class="text-xs text-slate-400 mb-6">Explore our precision titanium catalog and add some gear.</p>
+        <a href="/" class="px-6 py-3 bg-sky-500 text-slate-950 font-bold rounded-xl text-xs hover:bg-sky-400 transition inline-block">
+          Explore Titanium Gear
+        </a>
+      </div>
+    {% endif %}
+
+  </main>
+
+  <footer class="border-t border-white/5 bg-slate-950/80 mt-16 py-8 text-center text-xs text-slate-500">
+    © 2026 Titanium (Ti22) Native Web Runtime
+  </footer>
+
+</body>
+</html>

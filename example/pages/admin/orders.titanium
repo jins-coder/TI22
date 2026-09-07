@@ -1,0 +1,161 @@
+---
+// 1. Handle Order Updates
+if req.method == "POST" {
+  let action = body.action;
+  if action == "update_status" && body.order_id != () && body.status != () {
+    db_run("UPDATE orders SET status = ? WHERE id = ?", [body.status, body.order_id]);
+    session.flash("msg", "⚡ Order #" + to_string(body.order_id) + " status changed to " + body.status);
+    return redirect("/admin/orders");
+  } else if action == "delete_order" && body.order_id != () {
+    db_run("DELETE FROM orders WHERE id = ?", [body.order_id]);
+    db_run("DELETE FROM order_items WHERE order_id = ?", [body.order_id]);
+    session.flash("msg", "🗑️ Order record removed.");
+    return redirect("/admin/orders");
+  }
+}
+
+// 2. Fetch All Orders
+let orders = db_query("SELECT * FROM orders ORDER BY id DESC");
+let flash_msg = session.flash("msg");
+---
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Orders Ledger | TITANSTORE Admin</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <link rel="stylesheet" href="/app.css">
+</head>
+<body class="bg-[#090d16] text-slate-100 min-h-screen flex flex-col antialiased selection:bg-sky-500 selection:text-white">
+
+  <!-- Admin Navigation -->
+  <header class="sticky top-0 z-50 glass-header border-b border-white/10">
+    <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+      <div class="flex items-center justify-between h-16 gap-4">
+        
+        <div class="flex items-center gap-3">
+          <div class="w-9 h-9 rounded-xl bg-gradient-to-tr from-sky-400 to-indigo-500 flex items-center justify-center text-slate-950 font-black text-lg shadow-lg shadow-sky-500/20">
+            Ti
+          </div>
+          <div>
+            <span class="text-base font-black tracking-wider text-white">TITAN<span class="text-sky-400">ADMIN</span></span>
+          </div>
+        </div>
+
+        <div class="flex items-center gap-2">
+          <a href="/admin" class="px-3 py-1.5 rounded-lg text-xs font-semibold text-slate-300 hover:text-white hover:bg-slate-800/80 transition">
+            Dashboard
+          </a>
+          <a href="/admin/products" class="px-3 py-1.5 rounded-lg text-xs font-semibold text-slate-300 hover:text-white hover:bg-slate-800/80 transition">
+            Products
+          </a>
+          <a href="/admin/orders" class="px-3 py-1.5 rounded-lg text-xs font-bold bg-sky-500 text-slate-950 shadow-md shadow-sky-500/20">
+            Orders
+          </a>
+          <a href="/" class="ml-2 px-3 py-1.5 rounded-lg text-xs font-semibold text-slate-400 hover:text-white border border-white/10 transition">
+            Storefront ↗
+          </a>
+        </div>
+
+      </div>
+    </div>
+  </header>
+
+  <!-- Flash Message -->
+  {% if flash_msg %}
+    <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 mt-4 w-full">
+      <div class="bg-emerald-500/10 border border-emerald-500/30 text-emerald-300 px-4 py-3 rounded-xl text-sm font-medium">
+        {{ flash_msg }}
+      </div>
+    </div>
+  {% endif %}
+
+  <!-- Orders Content -->
+  <main class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8 flex-1 w-full space-y-8">
+    
+    <div>
+      <h1 class="text-2xl sm:text-3xl font-extrabold text-white tracking-tight">Order Fulfillment Ledger</h1>
+      <p class="text-xs text-slate-400 mt-1">Full transaction and customer order history in SQLite</p>
+    </div>
+
+    <div class="glass-panel p-6 rounded-2xl space-y-4">
+      <div class="overflow-x-auto">
+        <table class="w-full text-left text-xs">
+          <thead>
+            <tr class="text-slate-400 border-b border-white/5">
+              <th class="pb-3 font-semibold">Order ID</th>
+              <th class="pb-3 font-semibold">Customer & Delivery</th>
+              <th class="pb-3 font-semibold">Gateway</th>
+              <th class="pb-3 font-semibold">Total Amount</th>
+              <th class="pb-3 font-semibold">Status</th>
+              <th class="pb-3 font-semibold">Placed At</th>
+              <th class="pb-3 font-semibold text-right">Actions</th>
+            </tr>
+          </thead>
+          <tbody class="divide-y divide-white/5">
+            {% for o in orders %}
+              <tr class="hover:bg-white/5 transition">
+                
+                <td class="py-4 font-mono font-bold text-sky-400">
+                  <a href="/order_success/{{ o.id }}">{{ o.order_number }}</a>
+                </td>
+
+                <td class="py-4">
+                  <div class="font-bold text-white">{{ o.customer_name }}</div>
+                  <div class="text-[11px] text-slate-400">{{ o.customer_email }}</div>
+                  <div class="text-[10px] text-slate-500 mt-0.5">{{ o.customer_address }}, {{ o.customer_city }}</div>
+                </td>
+
+                <td class="py-4">
+                  <span class="px-2 py-0.5 rounded text-[10px] font-semibold bg-slate-900 border border-white/10 text-slate-300">
+                    {{ o.payment_method }}
+                  </span>
+                </td>
+
+                <td class="py-4 font-mono font-bold text-base text-white">
+                  ${{ o.total }}
+                </td>
+
+                <td class="py-4">
+                  <form method="POST" action="/admin/orders" class="m-0">
+                    <input type="hidden" name="action" value="update_status">
+                    <input type="hidden" name="order_id" value="{{ o.id }}">
+                    <select name="status" onchange="this.form.requestSubmit()" class="bg-slate-900 border border-white/10 rounded-lg px-2.5 py-1 text-xs text-white focus:outline-none focus:border-sky-400 font-semibold">
+                      <option value="Processing" {% if o.status == 'Processing' %}selected{% endif %}>🟡 Processing</option>
+                      <option value="Shipped" {% if o.status == 'Shipped' %}selected{% endif %}>🔵 Shipped</option>
+                      <option value="Delivered" {% if o.status == 'Delivered' %}selected{% endif %}>🟢 Delivered</option>
+                      <option value="Cancelled" {% if o.status == 'Cancelled' %}selected{% endif %}>🔴 Cancelled</option>
+                    </select>
+                  </form>
+                </td>
+
+                <td class="py-4 font-mono text-[11px] text-slate-400">
+                  {{ o.created_at }}
+                </td>
+
+                <td class="py-4 text-right space-x-2">
+                  <a href="/order_success/{{ o.id }}" class="px-2.5 py-1.5 rounded bg-slate-800 hover:bg-slate-700 text-[11px] font-bold text-sky-400 inline-block transition">
+                    Invoice
+                  </a>
+
+                  <form method="POST" action="/admin/orders" class="inline-block m-0" onsubmit="return confirm('Delete this order?');">
+                    <input type="hidden" name="action" value="delete_order">
+                    <input type="hidden" name="order_id" value="{{ o.id }}">
+                    <button type="submit" class="p-1.5 text-rose-400 hover:text-rose-300 rounded hover:bg-rose-500/10 transition" title="Delete Order">
+                      <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"></path></svg>
+                    </button>
+                  </form>
+                </td>
+
+              </tr>
+            {% endfor %}
+          </tbody>
+        </table>
+      </div>
+    </div>
+
+  </main>
+
+</body>
+</html>

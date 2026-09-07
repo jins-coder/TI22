@@ -1,0 +1,234 @@
+---
+// 1. Handle Order Status Update (Zero-reload Turbo Action)
+if req.method == "POST" {
+  let action = body.action;
+  if action == "update_status" && body.order_id != () && body.status != () {
+    db_run("UPDATE orders SET status = ? WHERE id = ?", [body.status, body.order_id]);
+    session.flash("msg", "⚡ Order #" + to_string(body.order_id) + " updated to " + body.status);
+    return redirect("/admin");
+  }
+}
+
+// 2. Metrics & KPI Aggregations
+let rev_res = db_first("SELECT SUM(total) as revenue FROM orders");
+let total_revenue = if rev_res != () && rev_res.revenue != () { rev_res.revenue } else { 0.0 };
+
+let orders_count_res = db_first("SELECT COUNT(*) as count FROM orders");
+let total_orders = if orders_count_res != () { orders_count_res.count } else { 0 };
+
+let prod_res = db_first("SELECT COUNT(*) as total_prods, SUM(stock) as total_units FROM products");
+let total_products = if prod_res != () { prod_res.total_prods } else { 0 };
+let total_units = if prod_res != () && prod_res.total_units != () { prod_res.total_units } else { 0 };
+
+// 3. Recent Orders & Low Stock
+let recent_orders = db_query("SELECT * FROM orders ORDER BY id DESC LIMIT 6");
+let low_stock_items = db_query("SELECT * FROM products WHERE stock <= 15 ORDER BY stock ASC LIMIT 4");
+
+let flash_msg = session.flash("msg");
+---
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Store Executive Dashboard | TITANSTORE Admin</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <link rel="stylesheet" href="/app.css">
+</head>
+<body class="bg-[#090d16] text-slate-100 min-h-screen flex flex-col antialiased selection:bg-sky-500 selection:text-white">
+
+  <!-- Admin Top Navigation -->
+  <header class="sticky top-0 z-50 glass-header border-b border-white/10">
+    <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+      <div class="flex items-center justify-between h-16 gap-4">
+        
+        <div class="flex items-center gap-3">
+          <div class="w-9 h-9 rounded-xl bg-gradient-to-tr from-sky-400 to-indigo-500 flex items-center justify-center text-slate-950 font-black text-lg shadow-lg shadow-sky-500/20">
+            Ti
+          </div>
+          <div>
+            <span class="text-base font-black tracking-wider text-white">TITAN<span class="text-sky-400">ADMIN</span></span>
+            <span class="text-[10px] font-mono text-emerald-400 ml-2 px-2 py-0.5 rounded bg-emerald-500/10 border border-emerald-500/20">SQLite WAL Active</span>
+          </div>
+        </div>
+
+        <!-- Admin Nav Links -->
+        <div class="flex items-center gap-2">
+          <a href="/admin" class="px-3 py-1.5 rounded-lg text-xs font-bold bg-sky-500 text-slate-950 shadow-md shadow-sky-500/20">
+            Dashboard
+          </a>
+          <a href="/admin/products" class="px-3 py-1.5 rounded-lg text-xs font-semibold text-slate-300 hover:text-white hover:bg-slate-800/80 transition">
+            Products
+          </a>
+          <a href="/admin/orders" class="px-3 py-1.5 rounded-lg text-xs font-semibold text-slate-300 hover:text-white hover:bg-slate-800/80 transition">
+            Orders
+          </a>
+          <a href="/__titanium_studio" class="px-3 py-1.5 rounded-lg text-xs font-semibold text-purple-300 bg-purple-500/10 border border-purple-500/20 hover:bg-purple-500/20 transition">
+            🛠️ Studio GUI
+          </a>
+          <a href="/" class="ml-2 px-3 py-1.5 rounded-lg text-xs font-semibold text-slate-400 hover:text-white border border-white/10 transition">
+            Storefront ↗
+          </a>
+        </div>
+
+      </div>
+    </div>
+  </header>
+
+  <!-- Flash Message -->
+  {% if flash_msg %}
+    <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 mt-4 w-full">
+      <div class="bg-emerald-500/10 border border-emerald-500/30 text-emerald-300 px-4 py-3 rounded-xl text-sm font-medium">
+        {{ flash_msg }}
+      </div>
+    </div>
+  {% endif %}
+
+  <!-- Dashboard Main Content -->
+  <main class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8 flex-1 w-full space-y-8">
+    
+    <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+      <div>
+        <h1 class="text-2xl sm:text-3xl font-extrabold text-white tracking-tight">Executive Dashboard</h1>
+        <p class="text-xs text-slate-400 mt-1">Live metrics from embedded SQLite storage engine</p>
+      </div>
+
+      <div class="flex items-center gap-3">
+        <a href="/admin/products" class="px-4 py-2 rounded-xl bg-sky-500 hover:bg-sky-400 text-slate-950 font-bold text-xs shadow-lg shadow-sky-500/25 transition">
+          + Add New Product
+        </a>
+      </div>
+    </div>
+
+    <!-- 4 KPI Metrics Grid -->
+    <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-5">
+      
+      <div class="glass-card p-5 rounded-2xl glow-cyan">
+        <div class="flex items-center justify-between text-slate-400 text-xs font-semibold">
+          <span>Gross Revenue</span>
+          <span class="text-emerald-400 font-mono">● Live</span>
+        </div>
+        <div class="text-3xl font-black text-white font-mono mt-3">${{ total_revenue }}</div>
+        <div class="text-[11px] text-slate-500 mt-1">Total completed checkout sales</div>
+      </div>
+
+      <div class="glass-card p-5 rounded-2xl">
+        <div class="flex items-center justify-between text-slate-400 text-xs font-semibold">
+          <span>Total Orders</span>
+          <span class="text-sky-400 font-mono">SQLite WAL</span>
+        </div>
+        <div class="text-3xl font-black text-white font-mono mt-3">{{ total_orders }}</div>
+        <div class="text-[11px] text-slate-500 mt-1">Processed transactions</div>
+      </div>
+
+      <div class="glass-card p-5 rounded-2xl">
+        <div class="flex items-center justify-between text-slate-400 text-xs font-semibold">
+          <span>Catalog SKUs</span>
+          <span class="text-indigo-400 font-mono">Active</span>
+        </div>
+        <div class="text-3xl font-black text-white font-mono mt-3">{{ total_products }}</div>
+        <div class="text-[11px] text-slate-500 mt-1">Unique titanium products</div>
+      </div>
+
+      <div class="glass-card p-5 rounded-2xl">
+        <div class="flex items-center justify-between text-slate-400 text-xs font-semibold">
+          <span>Stock In Vault</span>
+          <span class="text-amber-400 font-mono">Inventory</span>
+        </div>
+        <div class="text-3xl font-black text-white font-mono mt-3">{{ total_units }}</div>
+        <div class="text-[11px] text-slate-500 mt-1">Total units ready for dispatch</div>
+      </div>
+
+    </div>
+
+    <!-- Recent Orders & Low Stock Section -->
+    <div class="grid grid-cols-1 lg:grid-cols-12 gap-8">
+      
+      <!-- Recent Orders Table -->
+      <div class="lg:col-span-8 glass-panel p-6 rounded-2xl space-y-4">
+        <div class="flex items-center justify-between pb-3 border-b border-white/10">
+          <h2 class="text-base font-bold text-white">Recent Orders Stream</h2>
+          <a href="/admin/orders" class="text-xs font-semibold text-sky-400 hover:text-sky-300">View All Orders →</a>
+        </div>
+
+        <div class="overflow-x-auto">
+          <table class="w-full text-left text-xs">
+            <thead>
+              <tr class="text-slate-400 border-b border-white/5">
+                <th class="pb-3 font-semibold">Order</th>
+                <th class="pb-3 font-semibold">Customer</th>
+                <th class="pb-3 font-semibold">Total</th>
+                <th class="pb-3 font-semibold">Status</th>
+                <th class="pb-3 font-semibold text-right">Quick Update</th>
+              </tr>
+            </thead>
+            <tbody class="divide-y divide-white/5">
+              {% for o in recent_orders %}
+                <tr class="hover:bg-white/5 transition">
+                  <td class="py-3.5 font-mono font-bold text-sky-400">
+                    <a href="/order_success/{{ o.id }}">{{ o.order_number }}</a>
+                  </td>
+                  <td class="py-3.5">
+                    <div class="font-semibold text-white">{{ o.customer_name }}</div>
+                    <div class="text-[11px] text-slate-500">{{ o.customer_email }}</div>
+                  </td>
+                  <td class="py-3.5 font-mono font-bold text-white">${{ o.total }}</td>
+                  <td class="py-3.5">
+                    <span class="px-2.5 py-1 rounded-full text-[10px] font-bold {% if o.status == 'Delivered' %} bg-emerald-500/10 text-emerald-300 border border-emerald-500/30 {% elif o.status == 'Shipped' %} bg-sky-500/10 text-sky-300 border border-sky-500/30 {% else %} bg-amber-500/10 text-amber-300 border border-amber-500/30 {% endif %}">
+                      {{ o.status }}
+                    </span>
+                  </td>
+                  <td class="py-3.5 text-right">
+                    <!-- Instant status update form -->
+                    <form method="POST" action="/admin" class="inline-block m-0">
+                      <input type="hidden" name="action" value="update_status">
+                      <input type="hidden" name="order_id" value="{{ o.id }}">
+                      <select name="status" onchange="this.form.requestSubmit()" class="bg-slate-900 border border-white/10 rounded-lg px-2 py-1 text-[11px] text-white focus:outline-none focus:border-sky-400">
+                        <option value="Processing" {% if o.status == 'Processing' %}selected{% endif %}>Processing</option>
+                        <option value="Shipped" {% if o.status == 'Shipped' %}selected{% endif %}>Shipped</option>
+                        <option value="Delivered" {% if o.status == 'Delivered' %}selected{% endif %}>Delivered</option>
+                      </select>
+                    </form>
+                  </td>
+                </tr>
+              {% endfor %}
+            </tbody>
+          </table>
+        </div>
+      </div>
+
+      <!-- Low Stock Inventory Alerts -->
+      <div class="lg:col-span-4 glass-panel p-6 rounded-2xl space-y-4">
+        <h2 class="text-base font-bold text-white pb-3 border-b border-white/10 flex items-center justify-between">
+          <span>⚠️ Inventory Watch</span>
+          <span class="text-xs text-amber-400 font-mono">{{ low_stock_items.len() }} low</span>
+        </h2>
+
+        <div class="space-y-3">
+          {% for item in low_stock_items %}
+            <div class="p-3 rounded-xl bg-slate-900/60 border border-white/5 flex items-center justify-between gap-3">
+              <div class="flex items-center gap-3">
+                <img src="{{ item.image_url }}" alt="{{ item.name }}" class="w-10 h-10 rounded-lg object-cover bg-slate-950 shrink-0">
+                <div>
+                  <h4 class="font-bold text-white text-xs truncate max-w-[140px]">{{ item.name }}</h4>
+                  <span class="text-[10px] text-slate-500">{{ item.category }} • ${{ item.price }}</span>
+                </div>
+              </div>
+              <span class="px-2 py-1 rounded-md text-xs font-mono font-bold {% if item.stock <= 10 %} bg-rose-500/20 text-rose-300 border border-rose-500/30 {% else %} bg-amber-500/20 text-amber-300 border border-amber-500/30 {% endif %}">
+                {{ item.stock }} left
+              </span>
+            </div>
+          {% endfor %}
+        </div>
+
+        <a href="/admin/products" class="w-full py-2.5 rounded-xl bg-slate-800 hover:bg-slate-700 text-xs font-bold text-center text-slate-200 block transition border border-white/10">
+          Manage All Products
+        </a>
+      </div>
+
+    </div>
+
+  </main>
+
+</body>
+</html>
