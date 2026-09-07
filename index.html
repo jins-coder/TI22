@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<html lang="en" class="scroll-smooth">
+<html lang="en" class="dark scroll-smooth">
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
@@ -25,9 +25,9 @@
               indigo: '#6366f1',
               purple: '#c084fc',
               dark: '#060911',
-              sidebar: '#0a0f1d',
-              card: '#0e1526',
-              border: '#1b253b',
+              sidebar: '#080d1a',
+              card: '#0c1324',
+              border: '#18243c',
               accent: '#38bdf8',
               success: '#10b981',
               warning: '#f59e0b',
@@ -39,19 +39,31 @@
     }
   </script>
   <style>
-    body { background-color: #060911; color: #cbd5e1; font-family: 'Plus Jakarta Sans', sans-serif; }
-    .glass-nav { background: rgba(6, 9, 17, 0.92); backdrop-filter: blur(20px); border-bottom: 1px solid rgba(255, 255, 255, 0.08); }
-    .sidebar-nav { background: #080d1a; border-right: 1px solid #162035; }
-    .doc-card { background: #0c1324; border: 1px solid #18243c; }
-    .code-block { background: #03060c; border: 1px solid #162137; font-family: 'JetBrains Mono', monospace; }
+    /* Dark Theme (Default) */
+    html.dark body { background-color: #060911; color: #cbd5e1; }
+    html.dark .glass-nav { background: rgba(6, 9, 17, 0.92); backdrop-filter: blur(20px); border-bottom: 1px solid rgba(255, 255, 255, 0.08); }
+    html.dark .sidebar-nav { background: #080d1a; border-color: #162035; }
+    html.dark .doc-card { background: #0c1324; border: 1px solid #18243c; }
+    html.dark .code-block { background: #03060c; border: 1px solid #162137; }
+    html.dark .toc-nav { border-left-color: #162035; }
+
+    /* Light Theme */
+    html:not(.dark) body { background-color: #f8fafc; color: #334155; }
+    html:not(.dark) .glass-nav { background: rgba(255, 255, 255, 0.92); backdrop-filter: blur(20px); border-bottom: 1px solid #e2e8f0; }
+    html:not(.dark) .sidebar-nav { background: #ffffff; border-color: #e2e8f0; }
+    html:not(.dark) .doc-card { background: #ffffff; border: 1px solid #e2e8f0; box-shadow: 0 4px 12px rgba(0,0,0,0.03); }
+    html:not(.dark) .code-block { background: #0f172a; border: 1px solid #1e293b; color: #f8fafc; }
+    html:not(.dark) .toc-nav { border-left-color: #e2e8f0; }
+    html:not(.dark) text { fill: #0f172a; }
+
     .badge { display: inline-flex; align-items: center; padding: 2px 8px; border-radius: 6px; font-family: 'JetBrains Mono', monospace; font-size: 11px; font-weight: 700; }
     .alert-tip { background: rgba(16, 185, 129, 0.08); border-left: 4px solid #10b981; }
     .alert-info { background: rgba(56, 189, 248, 0.08); border-left: 4px solid #38bdf8; }
     .alert-warn { background: rgba(245, 158, 11, 0.08); border-left: 4px solid #f59e0b; }
     .alert-danger { background: rgba(244, 63, 94, 0.08); border-left: 4px solid #f43f5e; }
-    .nav-link.active { color: #38bdf8; font-weight: 700; border-left: 2px solid #38bdf8; padding-left: 10px; }
+    
     ::-webkit-scrollbar { width: 6px; height: 6px; }
-    ::-webkit-scrollbar-track { background: #060911; }
+    ::-webkit-scrollbar-track { background: transparent; }
     ::-webkit-scrollbar-thumb { background: #1b263b; border-radius: 3px; }
     ::-webkit-scrollbar-thumb:hover { background: #334155; }
   </style>
@@ -59,166 +71,146 @@
 <body class="antialiased selection:bg-ti-cyan selection:text-slate-950 flex flex-col min-h-screen">
 
   <!-- Top Announcement Bar -->
-  <div class="bg-gradient-to-r from-sky-500/20 via-indigo-500/20 to-purple-500/20 border-b border-white/5 py-2 text-center text-xs font-semibold text-sky-300">
+  <div class="bg-gradient-to-r from-sky-500/20 via-indigo-500/20 to-purple-500/20 border-b border-white/5 py-2 text-center text-xs font-semibold text-sky-400 dark:text-sky-300">
     <span>⚡ <strong>Titanium v10.0.0 Supercluster X</strong> — The Official Comprehensive Documentation & API Manual.</span>
   </div>
 
   <!-- Header Navigation -->
   <header class="sticky top-0 z-50 glass-nav">
-    <div class="max-w-8xl mx-auto px-4 sm:px-6 lg:px-8 flex items-center justify-between h-16">
+    <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 flex items-center justify-between h-16 gap-4">
       
-      <div class="flex items-center gap-4">
+      <!-- Brand -->
+      <div class="flex items-center gap-3 shrink-0">
         <a href="/" class="flex items-center gap-3">
           <div class="w-9 h-9 rounded-xl bg-gradient-to-tr from-sky-400 to-indigo-500 flex items-center justify-center text-slate-950 font-black text-base shadow-lg shadow-sky-500/20">
             Ti
           </div>
           <div class="flex items-center gap-2">
-            <span class="font-black text-xl tracking-wider text-white">TITANIUM <span class="text-sky-400 font-mono text-sm font-bold">X</span></span>
-            <span class="text-[10px] font-mono px-2 py-0.5 rounded-full bg-sky-500/10 border border-sky-500/20 text-sky-300 font-bold">v10.0.0</span>
+            <span class="font-black text-xl tracking-wider text-slate-900 dark:text-white">TITANIUM <span class="text-sky-500 font-mono text-sm font-bold">X</span></span>
+            <span class="text-[10px] font-mono px-2 py-0.5 rounded-full bg-sky-500/10 border border-sky-500/20 text-sky-500 dark:text-sky-300 font-bold">v10.0.0</span>
           </div>
         </a>
       </div>
 
       <!-- Quick Search Bar -->
-      <div class="hidden md:flex items-center flex-1 max-w-md mx-8 relative">
+      <div class="hidden md:flex items-center flex-1 max-w-md relative">
         <input 
           type="text" 
           id="doc-search" 
           placeholder="Search documentation (e.g. model, ws_broadcast, ai_rag, cluster)..." 
           oninput="handleSearch(this.value)"
-          class="w-full bg-[#0b101d] border border-[#1b253b] focus:border-sky-500 rounded-xl px-4 py-2 text-xs text-white placeholder-slate-500 focus:outline-none transition"
+          class="w-full bg-slate-100 dark:bg-[#0b101d] border border-slate-200 dark:border-[#1b253b] focus:border-sky-500 rounded-xl px-4 py-2 text-xs text-slate-900 dark:text-white placeholder-slate-400 focus:outline-none transition"
         />
-        <span class="absolute right-3 text-[10px] font-mono bg-white/5 border border-white/10 px-1.5 py-0.5 rounded text-slate-400">Ctrl K</span>
+        <span class="absolute right-3 text-[10px] font-mono bg-white dark:bg-white/5 border border-slate-200 dark:border-white/10 px-1.5 py-0.5 rounded text-slate-400">Ctrl K</span>
       </div>
 
-      <div class="flex items-center gap-4 text-xs font-bold">
-        <a href="http://127.0.0.1:8080/__titanium_studio" target="_blank" class="hidden sm:flex items-center gap-1.5 text-sky-400 hover:text-sky-300 transition">
-          <span>🎨 Studio GUI</span>
+      <!-- Right Header Actions & Theme Toggle -->
+      <div class="flex items-center gap-3 shrink-0">
+        
+        <!-- Theme Toggle Button -->
+        <button 
+          id="theme-toggle-btn"
+          onclick="toggleTheme()" 
+          title="Toggle Light / Dark Mode" 
+          class="w-9 h-9 rounded-xl bg-slate-100 dark:bg-white/5 hover:bg-slate-200 dark:hover:bg-white/10 border border-slate-200 dark:border-white/10 flex items-center justify-center text-slate-700 dark:text-slate-200 transition"
+        >
+          <!-- Moon Icon (for dark mode) -->
+          <svg id="theme-moon" class="w-4 h-4 hidden dark:block text-sky-400" fill="currentColor" viewBox="0 0 20 20"><path d="M17.293 13.293A8 8 0 016.707 2.707a8.001 8.001 0 1010.586 10.586z"></path></svg>
+          <!-- Sun Icon (for light mode) -->
+          <svg id="theme-sun" class="w-4 h-4 block dark:hidden text-amber-500" fill="currentColor" viewBox="0 0 20 20"><path fill-rule="evenodd" d="M10 2a1 1 0 011 1v1a1 1 0 11-2 0V3a1 1 0 011-1zm4 8a4 4 0 11-8 0 4 4 0 018 0zm-.464 4.95l.707.707a1 1 0 001.414-1.414l-.707-.707a1 1 0 00-1.414 1.414zm2.12-10.607a1 1 0 010 1.414l-.706.707a1 1 0 11-1.414-1.414l.707-.707a1 1 0 011.414 0zM17 11a1 1 0 100-2h-1a1 1 0 100 2h1zm-7 4a1 1 0 011 1v1a1 1 0 11-2 0v-1a1 1 0 011-1zM5.05 6.464A1 1 0 106.465 5.05l-.708-.707a1 1 0 00-1.414 1.414l.707.707zm1.414 8.486l-.707.707a1 1 0 01-1.414-1.414l.707-.707a1 1 0 011.414 1.414zM4 11a1 1 0 100-2H3a1 1 0 000 2h1z" clip-rule="evenodd"></path></svg>
+        </button>
+
+        <a href="http://127.0.0.1:8080/__titanium_studio" target="_blank" class="hidden sm:flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-sky-500/10 border border-sky-500/20 text-sky-500 dark:text-sky-400 hover:bg-sky-500/20 text-xs font-bold transition">
+          <span>🎨 Studio</span>
         </a>
-        <a href="https://github.com/jins-coder/TI22" target="_blank" class="px-4 py-2 rounded-xl bg-white/5 hover:bg-white/10 border border-white/10 text-white transition flex items-center gap-2">
+
+        <a href="https://github.com/jins-coder/TI22" target="_blank" class="px-3.5 py-1.5 rounded-xl bg-slate-900 text-white dark:bg-white/5 hover:dark:bg-white/10 border border-slate-700 dark:border-white/10 text-xs font-bold transition flex items-center gap-2">
           <svg class="w-4 h-4" fill="currentColor" viewBox="0 0 24 24"><path fill-rule="evenodd" clip-rule="evenodd" d="M12 2C6.477 2 2 6.484 2 12.017c0 4.425 2.865 8.18 6.839 9.504.5.092.682-.217.682-.483 0-.237-.008-.868-.013-1.703-2.782.605-3.369-1.343-3.369-1.343-.454-1.158-1.11-1.466-1.11-1.466-.908-.62.069-.608.069-.608 1.003.07 1.53 1.032 1.53 1.032.892 1.53 2.341 1.088 2.91.832.092-.647.35-1.088.636-1.338-2.22-.253-4.555-1.113-4.555-4.951 0-1.093.39-1.988 1.029-2.688-.103-.253-.446-1.272.098-2.65 0 0 .84-.27 2.75 1.026A9.564 9.564 0 0112 6.844c.85.004 1.705.115 2.504.337 1.909-1.296 2.747-1.027 2.747-1.027.546 1.379.202 2.398.1 2.651.64.7 1.028 1.595 1.028 2.688 0 3.848-2.339 4.695-4.566 4.943.359.309.678.92.678 1.855 0 1.338-.012 2.419-.012 2.747 0 .268.18.58.688.482A10.019 10.019 0 0022 12.017C22 6.484 17.522 2 12 2z"/></svg>
-          <span>GitHub</span>
+          <span class="hidden sm:inline">GitHub</span>
         </a>
       </div>
     </div>
   </header>
 
-  <!-- Documentation Layout -->
-  <div class="max-w-8xl mx-auto px-4 sm:px-6 lg:px-8 flex-1 w-full flex">
+  <!-- 3-Column Responsive Layout (Laravel Documentation Style) -->
+  <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 flex-1 w-full flex gap-8">
     
-    <!-- Left Sticky Sidebar (Laravel Style) -->
-    <aside class="hidden lg:block w-72 shrink-0 py-8 pr-6 sidebar-nav h-[calc(100vh-4rem)] sticky top-16 overflow-y-auto">
-      <div class="space-y-8 text-xs">
+    <!-- LEFT SIDEBAR: Nav Tree -->
+    <aside class="hidden lg:block w-64 shrink-0 py-8 pr-4 sidebar-nav h-[calc(100vh-4rem)] sticky top-16 overflow-y-auto border-r">
+      <div class="space-y-6 text-xs">
         
-        <!-- Section: Prologue -->
-        <div class="space-y-2">
-          <h3 class="font-black text-white uppercase tracking-wider text-[11px] text-sky-400">Prologue</h3>
-          <ul class="space-y-1.5 text-slate-400 font-medium">
-            <li><a href="#prologue-philosophy" class="hover:text-white transition block py-1">Architecture & Philosophy</a></li>
-            <li><a href="#prologue-benchmarks" class="hover:text-white transition block py-1">Performance Benchmarks</a></li>
-            <li><a href="#prologue-installation" class="hover:text-white transition block py-1">Installation & Setup</a></li>
-            <li><a href="#prologue-configuration" class="hover:text-white transition block py-1">Configuration (titanium.toml)</a></li>
-            <li><a href="#prologue-structure" class="hover:text-white transition block py-1">Directory Structure</a></li>
+        <div>
+          <h3 class="font-black uppercase tracking-wider text-[11px] text-sky-500 dark:text-sky-400 mb-2">Prologue</h3>
+          <ul class="space-y-1 text-slate-600 dark:text-slate-400 font-medium">
+            <li><a href="#prologue-philosophy" class="hover:text-sky-500 dark:hover:text-white transition block py-1">Architecture & Philosophy</a></li>
+            <li><a href="#prologue-installation" class="hover:text-sky-500 dark:hover:text-white transition block py-1">Installation & Setup</a></li>
+            <li><a href="#prologue-configuration" class="hover:text-sky-500 dark:hover:text-white transition block py-1">Configuration (titanium.toml)</a></li>
           </ul>
         </div>
 
-        <!-- Section: Architecture -->
-        <div class="space-y-2">
-          <h3 class="font-black text-white uppercase tracking-wider text-[11px] text-indigo-400">Architecture Concepts</h3>
-          <ul class="space-y-1.5 text-slate-400 font-medium">
-            <li><a href="#arch-lifecycle" class="hover:text-white transition block py-1">Request Lifecycle</a></li>
-            <li><a href="#arch-dual-engine" class="hover:text-white transition block py-1">Dual-Engine Execution</a></li>
-            <li><a href="#arch-middleware" class="hover:text-white transition block py-1">Global Middleware</a></li>
-            <li><a href="#arch-spa-turbo" class="hover:text-white transition block py-1">Turbo SPA & Soft-DOM Morphing</a></li>
+        <div>
+          <h3 class="font-black uppercase tracking-wider text-[11px] text-indigo-500 dark:text-indigo-400 mb-2">Architecture</h3>
+          <ul class="space-y-1 text-slate-600 dark:text-slate-400 font-medium">
+            <li><a href="#arch-dual-engine" class="hover:text-indigo-500 dark:hover:text-white transition block py-1">Dual-Engine Execution</a></li>
+            <li><a href="#basics-routing" class="hover:text-indigo-500 dark:hover:text-white transition block py-1">File Routing & Params</a></li>
           </ul>
         </div>
 
-        <!-- Section: The Basics -->
-        <div class="space-y-2">
-          <h3 class="font-black text-white uppercase tracking-wider text-[11px] text-purple-400">The Basics</h3>
-          <ul class="space-y-1.5 text-slate-400 font-medium">
-            <li><a href="#basics-routing" class="hover:text-white transition block py-1">Routing & Dynamic Params</a></li>
-            <li><a href="#basics-requests" class="hover:text-white transition block py-1">Requests & Input</a></li>
-            <li><a href="#basics-responses" class="hover:text-white transition block py-1">Responses (JSON, HTML, View)</a></li>
-            <li><a href="#basics-views" class="hover:text-white transition block py-1">Views & Jinja Templates</a></li>
-            <li><a href="#basics-sessions" class="hover:text-white transition block py-1">Sessions & Flash Messages</a></li>
-            <li><a href="#basics-validation" class="hover:text-white transition block py-1">Input Validation</a></li>
+        <div>
+          <h3 class="font-black uppercase tracking-wider text-[11px] text-emerald-500 dark:text-emerald-400 mb-2">Database & ORM</h3>
+          <ul class="space-y-1 text-slate-600 dark:text-slate-400 font-medium">
+            <li><a href="#orm-query-builder" class="hover:text-emerald-500 dark:hover:text-white transition block py-1">ActiveRecord Query Builder</a></li>
+            <li><a href="#section-db" class="hover:text-emerald-500 dark:hover:text-white transition block py-1">Embedded SQLite & SQL</a></li>
           </ul>
         </div>
 
-        <!-- Section: Database & ORM -->
-        <div class="space-y-2">
-          <h3 class="font-black text-white uppercase tracking-wider text-[11px] text-emerald-400">Database & ORM</h3>
-          <ul class="space-y-1.5 text-slate-400 font-medium">
-            <li><a href="#orm-getting-started" class="hover:text-white transition block py-1">Embedded SQLite & WAL</a></li>
-            <li><a href="#orm-query-builder" class="hover:text-white transition block py-1">ActiveRecord Query Builder</a></li>
-            <li><a href="#orm-raw-sql" class="hover:text-white transition block py-1">Raw SQL & Prepared Statements</a></li>
-            <li><a href="#orm-crud" class="hover:text-white transition block py-1">Convenience CRUD Helpers</a></li>
-            <li><a href="#orm-migrations" class="hover:text-white transition block py-1">Automated Migrations</a></li>
+        <div>
+          <h3 class="font-black uppercase tracking-wider text-[11px] text-purple-500 dark:text-purple-400 mb-2">Realtime & Live</h3>
+          <ul class="space-y-1 text-slate-600 dark:text-slate-400 font-medium">
+            <li><a href="#realtime-overview" class="hover:text-purple-500 dark:hover:text-white transition block py-1">Hyperdrive WebSockets</a></li>
+            <li><a href="#realtime-broadcasting" class="hover:text-purple-500 dark:hover:text-white transition block py-1">Live Channel Broadcasting</a></li>
           </ul>
         </div>
 
-        <!-- Section: Realtime & WebSockets -->
-        <div class="space-y-2">
-          <h3 class="font-black text-white uppercase tracking-wider text-[11px] text-sky-400">Realtime & Live Channels</h3>
-          <ul class="space-y-1.5 text-slate-400 font-medium">
-            <li><a href="#realtime-overview" class="hover:text-white transition block py-1">Hyperdrive WebSocket Engine</a></li>
-            <li><a href="#realtime-broadcasting" class="hover:text-white transition block py-1">Server-Side Broadcasting</a></li>
-            <li><a href="#realtime-client-js" class="hover:text-white transition block py-1">Client JS (window.Titanium)</a></li>
-            <li><a href="#realtime-live-attributes" class="hover:text-white transition block py-1">Declarative data-live Morphing</a></li>
+        <div>
+          <h3 class="font-black uppercase tracking-wider text-[11px] text-sky-500 dark:text-sky-400 mb-2">AI & Semantic RAG</h3>
+          <ul class="space-y-1 text-slate-600 dark:text-slate-400 font-medium">
+            <li><a href="#ai-overview" class="hover:text-sky-500 dark:hover:text-white transition block py-1">Singularity AI Engine</a></li>
+            <li><a href="#ai-rag-pipelines" class="hover:text-sky-500 dark:hover:text-white transition block py-1">Vector Semantic RAG</a></li>
           </ul>
         </div>
 
-        <!-- Section: AI & Semantic RAG -->
-        <div class="space-y-2">
-          <h3 class="font-black text-white uppercase tracking-wider text-[11px] text-purple-400">Singularity AI & RAG</h3>
-          <ul class="space-y-1.5 text-slate-400 font-medium">
-            <li><a href="#ai-overview" class="hover:text-white transition block py-1">Multi-Provider AI Engine</a></li>
-            <li><a href="#ai-generation" class="hover:text-white transition block py-1">Text Generation & Chat</a></li>
-            <li><a href="#ai-vector-engine" class="hover:text-white transition block py-1">VectorEngine & Embeddings</a></li>
-            <li><a href="#ai-rag-pipelines" class="hover:text-white transition block py-1">Semantic RAG Pipelines</a></li>
-            <li><a href="#ai-token-streaming" class="hover:text-white transition block py-1">Real-Time Token Streaming (SSE)</a></li>
+        <div>
+          <h3 class="font-black uppercase tracking-wider text-[11px] text-amber-500 dark:text-amber-400 mb-2">Distributed Mesh</h3>
+          <ul class="space-y-1 text-slate-600 dark:text-slate-400 font-medium">
+            <li><a href="#cluster-overview" class="hover:text-amber-500 dark:hover:text-white transition block py-1">Supercluster Mesh</a></li>
+            <li><a href="#cluster-wal-sync" class="hover:text-amber-500 dark:hover:text-white transition block py-1">Distributed WAL Sync</a></li>
           </ul>
         </div>
 
-        <!-- Section: Supercluster Mesh -->
-        <div class="space-y-2">
-          <h3 class="font-black text-white uppercase tracking-wider text-[11px] text-amber-400">Supercluster Mesh</h3>
-          <ul class="space-y-1.5 text-slate-400 font-medium">
-            <li><a href="#cluster-overview" class="hover:text-white transition block py-1">Distributed Mesh Architecture</a></li>
-            <li><a href="#cluster-discovery" class="hover:text-white transition block py-1">Node Heartbeats & Leadership</a></li>
-            <li><a href="#cluster-wal-sync" class="hover:text-white transition block py-1">Distributed SQLite WAL Sync</a></li>
-            <li><a href="#cluster-broadcast" class="hover:text-white transition block py-1">Cross-Node Event Dispatch</a></li>
-          </ul>
-        </div>
-
-        <!-- Section: Services & Primitives -->
-        <div class="space-y-2">
-          <h3 class="font-black text-white uppercase tracking-wider text-[11px] text-rose-400">Services & Primitives</h3>
-          <ul class="space-y-1.5 text-slate-400 font-medium">
-            <li><a href="#services-cache" class="hover:text-white transition block py-1">In-Memory Cache (Redis Alt)</a></li>
-            <li><a href="#services-queues" class="hover:text-white transition block py-1">Background Async Job Queue</a></li>
-            <li><a href="#services-crypto" class="hover:text-white transition block py-1">Security & Cryptography</a></li>
-            <li><a href="#services-primitives" class="hover:text-white transition block py-1">PHP 8 Functional Primitives</a></li>
-            <li><a href="#services-studio" class="hover:text-white transition block py-1">Visual Web Studio GUI</a></li>
+        <div>
+          <h3 class="font-black uppercase tracking-wider text-[11px] text-rose-500 dark:text-rose-400 mb-2">Runtime Helpers</h3>
+          <ul class="space-y-1 text-slate-600 dark:text-slate-400 font-medium">
+            <li><a href="#services-primitives" class="hover:text-rose-500 dark:hover:text-white transition block py-1">Functional Primitives</a></li>
+            <li><a href="#web-studio" class="hover:text-rose-500 dark:hover:text-white transition block py-1">Visual Web Studio GUI</a></li>
           </ul>
         </div>
 
       </div>
     </aside>
 
-    <!-- Right Main Content Area -->
-    <main class="flex-1 py-10 lg:pl-10 space-y-16 min-w-0">
+    <!-- MIDDLE COLUMN: Main Content Area -->
+    <main class="flex-1 py-8 space-y-16 min-w-0 max-w-4xl">
 
       <!-- PROLOGUE: PHILOSOPHY -->
       <section id="prologue-philosophy" class="space-y-6">
-        <div class="border-b border-white/10 pb-4">
-          <span class="badge bg-sky-500/20 text-sky-300">Prologue</span>
-          <h1 class="text-3xl sm:text-4xl font-black text-white tracking-tight mt-2">Architecture & Philosophy</h1>
-          <p class="text-sm text-slate-400 mt-1">Understanding the fundamental advantages of the Titanium native web platform.</p>
+        <div class="border-b border-slate-200 dark:border-white/10 pb-4">
+          <span class="badge bg-sky-500/20 text-sky-600 dark:text-sky-300">Prologue</span>
+          <h1 class="text-3xl sm:text-4xl font-black text-slate-900 dark:text-white tracking-tight mt-2">Architecture & Philosophy</h1>
+          <p class="text-sm text-slate-500 dark:text-slate-400 mt-1">Understanding the fundamental advantages of the Titanium native web platform.</p>
         </div>
 
-        <div class="space-y-4 text-sm leading-relaxed text-slate-300">
+        <div class="space-y-4 text-sm leading-relaxed text-slate-700 dark:text-slate-300">
           <p>
             Traditional modern web development requires assembling dozens of fragile, heavy layers: Node.js or Python runtime engines, external Redis servers, PostgreSQL/MySQL clusters, NGINX reverse proxies, WebSocket daemons, task queue runners, and gigabytes of <code>node_modules</code>.
           </p>
@@ -229,34 +221,33 @@
 
         <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
           <div class="doc-card p-5 rounded-2xl space-y-2">
-            <h4 class="text-sm font-bold text-white">⚡ Zero Runtime Dependencies</h4>
-            <p class="text-xs text-slate-400">Compiles directly to native machine code. No Node.js, V8, Python, or Ruby interpreter needed.</p>
+            <h4 class="text-sm font-bold text-slate-900 dark:text-white">⚡ Zero Runtime Dependencies</h4>
+            <p class="text-xs text-slate-500 dark:text-slate-400">Compiles directly to native machine code. No Node.js, V8, Python, or Ruby interpreter needed.</p>
           </div>
           <div class="doc-card p-5 rounded-2xl space-y-2">
-            <h4 class="text-sm font-bold text-white">🗄️ Embedded Concurrency</h4>
-            <p class="text-xs text-slate-400">SQLite in WAL mode executes queries in sub-millisecond memory-mapped pages with zero network hops.</p>
+            <h4 class="text-sm font-bold text-slate-900 dark:text-white">🗄️ Embedded Concurrency</h4>
+            <p class="text-xs text-slate-500 dark:text-slate-400">SQLite in WAL mode executes queries in sub-millisecond memory-mapped pages with zero network hops.</p>
           </div>
           <div class="doc-card p-5 rounded-2xl space-y-2">
-            <h4 class="text-sm font-bold text-white">🌐 All-In-One Battery Included</h4>
-            <p class="text-xs text-slate-400">Built-in WebSockets, In-Memory TTL Cache, Background Queues, AI Agents, and Multi-Node Cluster.</p>
+            <h4 class="text-sm font-bold text-slate-900 dark:text-white">🌐 All-In-One Battery Included</h4>
+            <p class="text-xs text-slate-500 dark:text-slate-400">Built-in WebSockets, In-Memory TTL Cache, Background Queues, AI Agents, and Multi-Node Cluster.</p>
           </div>
         </div>
 
-        <!-- Callout Alert -->
-        <div class="alert-info p-4 rounded-xl space-y-1 text-xs text-slate-200">
-          <strong class="text-sky-400">Why the name Titanium (Ti22)?</strong>
+        <div class="alert-info p-4 rounded-xl space-y-1 text-xs text-slate-800 dark:text-slate-200">
+          <strong class="text-sky-600 dark:text-sky-400">Why the name Titanium (Ti22)?</strong>
           <p>Named after Element 22 on the periodic table — renowned for its extraordinary strength-to-weight ratio, high corrosion resistance, and aerospace durability. Titanium embodies these exact attributes in software engineering.</p>
         </div>
       </section>
 
       <!-- PROLOGUE: INSTALLATION & CONFIG -->
-      <section id="prologue-installation" class="space-y-6 pt-6 border-t border-white/5">
-        <div class="border-b border-white/10 pb-4">
-          <span class="badge bg-indigo-500/20 text-indigo-300">Prologue</span>
-          <h2 class="text-2xl sm:text-3xl font-extrabold text-white mt-2">Installation & Setup</h2>
+      <section id="prologue-installation" class="space-y-6 pt-6 border-t border-slate-200 dark:border-white/5">
+        <div class="border-b border-slate-200 dark:border-white/10 pb-4">
+          <span class="badge bg-indigo-500/20 text-indigo-600 dark:text-indigo-300">Prologue</span>
+          <h2 class="text-2xl sm:text-3xl font-extrabold text-slate-900 dark:text-white mt-2">Installation & Setup</h2>
         </div>
 
-        <div class="space-y-3 text-sm text-slate-300">
+        <div class="space-y-3 text-sm text-slate-700 dark:text-slate-300">
           <p>Titanium can be executed directly via Cargo or deployed as a standalone native binary:</p>
           
           <pre class="code-block p-4 rounded-xl text-xs overflow-x-auto text-slate-200"><code># 1. Clone the repository
@@ -272,8 +263,8 @@ http://127.0.0.1:8080/__titanium_studio</code></pre>
         </div>
 
         <div id="prologue-configuration" class="space-y-3 pt-4">
-          <h3 class="text-lg font-bold text-white">Configuration (<code>titanium.toml</code>)</h3>
-          <p class="text-xs text-slate-400">Titanium is configured via an optional <code>titanium.toml</code> file in your project root:</p>
+          <h3 class="text-lg font-bold text-slate-900 dark:text-white">Configuration (<code>titanium.toml</code>)</h3>
+          <p class="text-xs text-slate-500 dark:text-slate-400">Titanium is configured via an optional <code>titanium.toml</code> file in your project root:</p>
 
           <pre class="code-block p-4 rounded-xl text-xs overflow-x-auto text-sky-300"><code>[server]
 host = "127.0.0.1"
@@ -297,27 +288,22 @@ is_primary = true</code></pre>
       </section>
 
       <!-- ARCHITECTURE: DUAL ENGINE -->
-      <section id="arch-dual-engine" class="space-y-6 pt-6 border-t border-white/5">
-        <div class="border-b border-white/10 pb-4">
-          <span class="badge bg-purple-500/20 text-purple-300">Architecture</span>
-          <h2 class="text-2xl sm:text-3xl font-extrabold text-white mt-2">Dual-Engine Execution Pipeline</h2>
-          <p class="text-xs text-slate-400">Choose between rapid single-file agility or disciplined enterprise domain structures.</p>
+      <section id="arch-dual-engine" class="space-y-6 pt-6 border-t border-slate-200 dark:border-white/5">
+        <div class="border-b border-slate-200 dark:border-white/10 pb-4">
+          <span class="badge bg-purple-500/20 text-purple-600 dark:text-purple-300">Architecture</span>
+          <h2 class="text-2xl sm:text-3xl font-extrabold text-slate-900 dark:text-white mt-2">Dual-Engine Execution Pipeline</h2>
+          <p class="text-xs text-slate-500 dark:text-slate-400">Choose between rapid single-file agility or disciplined enterprise domain structures.</p>
         </div>
 
-        <div class="space-y-4 text-sm text-slate-300">
-          <p>
-            Unlike traditional web frameworks that lock you into a single rigid folder structure, Titanium supports two execution paradigms running concurrently on the same runtime:
-          </p>
-
+        <div class="space-y-4 text-sm text-slate-700 dark:text-slate-300">
           <div class="grid grid-cols-1 lg:grid-cols-2 gap-6 pt-2">
             
-            <!-- Paradigm 1 -->
             <div class="doc-card p-5 rounded-2xl space-y-3">
               <div class="flex items-center justify-between">
-                <h4 class="text-sm font-bold text-white">1. Single-File Pages (<code>pages/</code>)</h4>
-                <span class="badge bg-sky-500/20 text-sky-300">Component Driven</span>
+                <h4 class="text-sm font-bold text-slate-900 dark:text-white">1. Single-File Pages (<code>pages/</code>)</h4>
+                <span class="badge bg-sky-500/20 text-sky-600 dark:text-sky-300">Component Driven</span>
               </div>
-              <p class="text-xs text-slate-400">Frontmatter script header parsed with Rhai followed by Jinja2 SSR body:</p>
+              <p class="text-xs text-slate-500 dark:text-slate-400">Frontmatter script header parsed with Rhai followed by Jinja2 SSR body:</p>
               <pre class="code-block p-3 rounded-lg text-xs overflow-x-auto text-slate-200"><code>---
 let product = model("products").find(params.id);
 if product == () { return redirect("/404"); }
@@ -326,13 +312,12 @@ if product == () { return redirect("/404"); }
 &lt;p&gt;${{ product.price }}&lt;/p&gt;</code></pre>
             </div>
 
-            <!-- Paradigm 2 -->
             <div class="doc-card p-5 rounded-2xl space-y-3">
               <div class="flex items-center justify-between">
-                <h4 class="text-sm font-bold text-white">2. Domain-Driven MVC (<code>app/</code>)</h4>
-                <span class="badge bg-indigo-500/20 text-indigo-300">Enterprise Clean</span>
+                <h4 class="text-sm font-bold text-slate-900 dark:text-white">2. Domain-Driven MVC (<code>app/</code>)</h4>
+                <span class="badge bg-indigo-500/20 text-indigo-600 dark:text-indigo-300">Enterprise Clean</span>
               </div>
-              <p class="text-xs text-slate-400">Decoupled MVC controllers in <code>app/controllers/</code>:</p>
+              <p class="text-xs text-slate-500 dark:text-slate-400">Decoupled MVC controllers in <code>app/controllers/</code>:</p>
               <pre class="code-block p-3 rounded-lg text-xs overflow-x-auto text-slate-200"><code>// app/controllers/catalog.rhai
 fn show(req, session) {
   let item = model("products").find(req.params.id);
@@ -345,51 +330,42 @@ fn show(req, session) {
       </section>
 
       <!-- THE BASICS: ROUTING -->
-      <section id="basics-routing" class="space-y-6 pt-6 border-t border-white/5">
-        <div class="border-b border-white/10 pb-4">
-          <span class="badge bg-sky-500/20 text-sky-300">The Basics</span>
-          <h2 class="text-2xl sm:text-3xl font-extrabold text-white mt-2">Routing & Dynamic Parameters</h2>
+      <section id="basics-routing" class="space-y-6 pt-6 border-t border-slate-200 dark:border-white/5">
+        <div class="border-b border-slate-200 dark:border-white/10 pb-4">
+          <span class="badge bg-sky-500/20 text-sky-600 dark:text-sky-300">The Basics</span>
+          <h2 class="text-2xl sm:text-3xl font-extrabold text-slate-900 dark:text-white mt-2">Routing & Dynamic Parameters</h2>
         </div>
 
-        <div class="space-y-4 text-sm text-slate-300">
-          <p>
-            Titanium routes incoming HTTP requests automatically based on the directory structure of <code>pages/</code>:
-          </p>
-
+        <div class="space-y-4 text-sm text-slate-700 dark:text-slate-300">
           <div class="overflow-x-auto doc-card rounded-2xl">
-            <table class="w-full text-left text-xs text-slate-300">
-              <thead class="bg-white/5 text-sky-400 font-bold border-b border-white/10 font-mono uppercase">
+            <table class="w-full text-left text-xs text-slate-700 dark:text-slate-300">
+              <thead class="bg-slate-100 dark:bg-white/5 text-sky-600 dark:text-sky-400 font-bold border-b border-slate-200 dark:border-white/10 font-mono uppercase">
                 <tr>
                   <th class="p-3">File Path</th>
                   <th class="p-3">Matched Route Pattern</th>
                   <th class="p-3">Extracted Parameters</th>
                 </tr>
               </thead>
-              <tbody class="divide-y divide-white/5 font-mono">
+              <tbody class="divide-y divide-slate-200 dark:divide-white/5 font-mono">
                 <tr>
-                  <td class="p-3 text-white font-bold">pages/index.titanium</td>
-                  <td class="p-3 text-sky-300">/</td>
-                  <td class="p-3 text-slate-500">None</td>
+                  <td class="p-3 text-slate-900 dark:text-white font-bold">pages/index.titanium</td>
+                  <td class="p-3 text-sky-600 dark:text-sky-300">/</td>
+                  <td class="p-3 text-slate-400">None</td>
                 </tr>
                 <tr>
-                  <td class="p-3 text-white font-bold">pages/checkout.titanium</td>
-                  <td class="p-3 text-sky-300">/checkout</td>
-                  <td class="p-3 text-slate-500">None</td>
+                  <td class="p-3 text-slate-900 dark:text-white font-bold">pages/checkout.titanium</td>
+                  <td class="p-3 text-sky-600 dark:text-sky-300">/checkout</td>
+                  <td class="p-3 text-slate-400">None</td>
                 </tr>
                 <tr>
-                  <td class="p-3 text-white font-bold">pages/product/[id].titanium</td>
-                  <td class="p-3 text-sky-300">/product/:id</td>
-                  <td class="p-3 text-purple-300">params.id</td>
+                  <td class="p-3 text-slate-900 dark:text-white font-bold">pages/product/[id].titanium</td>
+                  <td class="p-3 text-sky-600 dark:text-sky-300">/product/:id</td>
+                  <td class="p-3 text-purple-600 dark:text-purple-300">params.id</td>
                 </tr>
                 <tr>
-                  <td class="p-3 text-white font-bold">pages/admin/orders/[order_id].titanium</td>
-                  <td class="p-3 text-sky-300">/admin/orders/:order_id</td>
-                  <td class="p-3 text-purple-300">params.order_id</td>
-                </tr>
-                <tr>
-                  <td class="p-3 text-white font-bold">pages/api/v1/[...slug].titanium</td>
-                  <td class="p-3 text-sky-300">/api/v1/*</td>
-                  <td class="p-3 text-purple-300">params.slug</td>
+                  <td class="p-3 text-slate-900 dark:text-white font-bold">pages/admin/orders/[order_id].titanium</td>
+                  <td class="p-3 text-sky-600 dark:text-sky-300">/admin/orders/:order_id</td>
+                  <td class="p-3 text-purple-600 dark:text-purple-300">params.order_id</td>
                 </tr>
               </tbody>
             </table>
@@ -398,18 +374,16 @@ fn show(req, session) {
       </section>
 
       <!-- DATABASE & ACTIVRECORD ORM -->
-      <section id="orm-query-builder" class="space-y-6 pt-6 border-t border-white/5">
-        <div class="border-b border-white/10 pb-4">
-          <span class="badge bg-emerald-500/20 text-emerald-300">Database & ORM</span>
-          <h2 class="text-2xl sm:text-3xl font-extrabold text-white mt-2">ActiveRecord Fluent Query Builder</h2>
-          <p class="text-xs text-slate-400">The primary database querying interface in Titanium (The Eloquent of Titanium).</p>
+      <section id="orm-query-builder" class="space-y-6 pt-6 border-t border-slate-200 dark:border-white/5">
+        <div class="border-b border-slate-200 dark:border-white/10 pb-4">
+          <span class="badge bg-emerald-500/20 text-emerald-600 dark:text-emerald-300">Database & ORM</span>
+          <h2 class="text-2xl sm:text-3xl font-extrabold text-slate-900 dark:text-white mt-2">ActiveRecord Fluent Query Builder</h2>
+          <p class="text-xs text-slate-500 dark:text-slate-400">The primary database querying interface in Titanium (The Eloquent of Titanium).</p>
         </div>
 
-        <div class="space-y-6 text-sm text-slate-300">
-          
-          <!-- Querying Records -->
+        <div class="space-y-6 text-sm text-slate-700 dark:text-slate-300">
           <div class="space-y-3">
-            <h3 class="text-base font-bold text-white">Retrieving Records</h3>
+            <h3 class="text-base font-bold text-slate-900 dark:text-white">Retrieving Records</h3>
             <pre class="code-block p-4 rounded-xl text-xs overflow-x-auto text-slate-200"><code>// 1. Retrieve all records
 let all_products = model("products").all();
 
@@ -433,10 +407,9 @@ let user = model("users").where("email", "alice@titanium.dev").first();
 let total_active = model("orders").where("status", "Processing").count();</code></pre>
           </div>
 
-          <!-- Creating & Mutating Records -->
           <div class="space-y-3">
-            <h3 class="text-base font-bold text-white">Creating & Mutating Records</h3>
-            <pre class="code-block p-4 rounded-xl text-xs overflow-x-auto text-emerald-300"><code>// Create new record (Returns #{ success: true, id: &lt;new_id&gt; })
+            <h3 class="text-base font-bold text-slate-900 dark:text-white">Creating & Mutating Records</h3>
+            <pre class="code-block p-4 rounded-xl text-xs overflow-x-auto text-emerald-300"><code>// Create new record
 let new_order = model("orders").create(#{
   order_number: "TI-10084",
   customer_name: "Alice Smith",
@@ -445,30 +418,71 @@ let new_order = model("orders").create(#{
 });
 
 // Update record by primary key
-model("products").update(4, #{
-  price: 299.99,
-  stock: 18
-});
+model("products").update(4, #{ price: 299.99, stock: 18 });
 
 // Delete record by primary key
 model("cart_items").delete(15);</code></pre>
           </div>
+        </div>
+      </section>
 
+      <!-- EMBEDDED SQLITE -->
+      <section id="section-db" class="space-y-6 pt-6 border-t border-slate-200 dark:border-white/5">
+        <div class="border-b border-slate-200 dark:border-white/10 pb-4">
+          <span class="badge bg-indigo-500/20 text-indigo-600 dark:text-indigo-300">SQLite Engine</span>
+          <h2 class="text-2xl sm:text-3xl font-extrabold text-slate-900 dark:text-white mt-2">Embedded SQLite & Raw SQL</h2>
+        </div>
+
+        <div class="overflow-x-auto doc-card rounded-2xl">
+          <table class="w-full text-left text-xs text-slate-700 dark:text-slate-300">
+            <thead class="bg-slate-100 dark:bg-white/5 text-sky-600 dark:text-sky-400 font-bold border-b border-slate-200 dark:border-white/10 font-mono uppercase">
+              <tr>
+                <th class="p-3">Function</th>
+                <th class="p-3">Arguments</th>
+                <th class="p-3">Returns</th>
+                <th class="p-3">Description</th>
+              </tr>
+            </thead>
+            <tbody class="divide-y divide-slate-200 dark:divide-white/5 font-mono">
+              <tr>
+                <td class="p-3 text-slate-900 dark:text-white font-bold">db_query</td>
+                <td class="p-3 text-sky-600 dark:text-sky-300">sql, params?</td>
+                <td class="p-3 text-purple-600 dark:text-purple-300">Array</td>
+                <td class="p-3 font-sans">Executes a SELECT query and returns an array of maps.</td>
+              </tr>
+              <tr>
+                <td class="p-3 text-slate-900 dark:text-white font-bold">db_first</td>
+                <td class="p-3 text-sky-600 dark:text-sky-300">sql, params?</td>
+                <td class="p-3 text-purple-600 dark:text-purple-300">Dynamic</td>
+                <td class="p-3 font-sans">Returns the first matching row or () if not found.</td>
+              </tr>
+              <tr>
+                <td class="p-3 text-slate-900 dark:text-white font-bold">db_run</td>
+                <td class="p-3 text-sky-600 dark:text-sky-300">sql, params</td>
+                <td class="p-3 text-purple-600 dark:text-purple-300">Map</td>
+                <td class="p-3 font-sans">Executes mutation returning rows_affected & last_insert_id.</td>
+              </tr>
+              <tr>
+                <td class="p-3 text-slate-900 dark:text-white font-bold">db_exec</td>
+                <td class="p-3 text-sky-600 dark:text-sky-300">sql</td>
+                <td class="p-3 text-purple-600 dark:text-purple-300">()</td>
+                <td class="p-3 font-sans">Executes raw DDL schema statements (CREATE TABLE, etc.).</td>
+              </tr>
+            </tbody>
+          </table>
         </div>
       </section>
 
       <!-- REALTIME & WEBSOCKETS -->
-      <section id="realtime-overview" class="space-y-6 pt-6 border-t border-white/5">
-        <div class="border-b border-white/10 pb-4">
-          <span class="badge bg-sky-500/20 text-sky-300">Realtime</span>
-          <h2 class="text-2xl sm:text-3xl font-extrabold text-white mt-2">Hyperdrive WebSockets & Live Channels</h2>
+      <section id="realtime-overview" class="space-y-6 pt-6 border-t border-slate-200 dark:border-white/5">
+        <div class="border-b border-slate-200 dark:border-white/10 pb-4">
+          <span class="badge bg-purple-500/20 text-purple-600 dark:text-purple-300">Realtime</span>
+          <h2 class="text-2xl sm:text-3xl font-extrabold text-slate-900 dark:text-white mt-2">Hyperdrive WebSockets & Live Channels</h2>
         </div>
 
-        <div class="space-y-6 text-sm text-slate-300">
-          
-          <div class="space-y-3">
-            <h3 class="text-base font-bold text-white">Server-Side Broadcasting (Rhai)</h3>
-            <p class="text-xs text-slate-400">Broadcast events from controllers or single-file scripts to connected clients:</p>
+        <div class="space-y-6 text-sm text-slate-700 dark:text-slate-300">
+          <div id="realtime-broadcasting" class="space-y-3">
+            <h3 class="text-base font-bold text-slate-900 dark:text-white">Server-Side Broadcasting (Rhai)</h3>
             <pre class="code-block p-4 rounded-xl text-xs overflow-x-auto text-purple-300"><code>// Broadcast to a specific channel topic
 ws_broadcast("orders", #{
   order_id: 104,
@@ -478,211 +492,208 @@ ws_broadcast("orders", #{
 });
 
 // Broadcast globally to all connected clients
-ws_broadcast_all(#{
-  announcement: "Scheduled maintenance in 10 minutes"
-});
-
-// Query live metrics
-let active_count = ws_client_count("orders");
-let active_channels = ws_channels();</code></pre>
+ws_broadcast_all(#{ announcement: "Flash sale active!" });</code></pre>
           </div>
 
           <div class="space-y-3">
-            <h3 class="text-base font-bold text-white">Client-Side JavaScript Bridge (<code>window.Titanium</code>)</h3>
-            <pre class="code-block p-4 rounded-xl text-xs overflow-x-auto text-sky-300"><code>// Subscribe to channel events
+            <h3 class="text-base font-bold text-slate-900 dark:text-white">Client-Side JavaScript Bridge (<code>window.Titanium</code>)</h3>
+            <pre class="code-block p-4 rounded-xl text-xs overflow-x-auto text-sky-300"><code>// Subscribe to channel events in browser
 const unsubscribe = window.Titanium.subscribe('orders', (payload, message) => {
   console.log('⚡ Received live order payload:', payload);
-  showToast(`New Order #${payload.order_number} for $${payload.total}`);
 });
 
-// Publish event from client
-window.Titanium.broadcast('chat', {
-  user: 'Alice',
-  text: 'Hello from browser!'
-});</code></pre>
+// Broadcast event from browser
+window.Titanium.broadcast('chat', { user: 'Alice', text: 'Hello!' });</code></pre>
           </div>
-
-          <div class="space-y-3">
-            <h3 class="text-base font-bold text-white">Declarative <code>data-live</code> Soft-DOM Morphing</h3>
-            <p class="text-xs text-slate-400">Automatically update HTML elements when channel messages arrive without writing custom JS:</p>
-            <pre class="code-block p-4 rounded-xl text-xs overflow-x-auto text-slate-200"><code>&lt;!-- Automatically updates whenever "inventory" channel receives an event --&gt;
-&lt;span data-live="inventory" data-live-key="stock"&gt;24 in stock&lt;/span&gt;</code></pre>
-          </div>
-
         </div>
       </section>
 
       <!-- SINGULARITY AI & VECTOR RAG -->
-      <section id="ai-overview" class="space-y-6 pt-6 border-t border-white/5">
-        <div class="border-b border-white/10 pb-4">
-          <span class="badge bg-purple-500/20 text-purple-300">Singularity AI</span>
-          <h2 class="text-2xl sm:text-3xl font-extrabold text-white mt-2">Singularity AI & Vector Semantic RAG</h2>
-          <p class="text-xs text-slate-400">Native local neural reasoning engine, live token streaming, and cosine similarity embeddings.</p>
+      <section id="ai-overview" class="space-y-6 pt-6 border-t border-slate-200 dark:border-white/5">
+        <div class="border-b border-slate-200 dark:border-white/10 pb-4">
+          <span class="badge bg-emerald-500/20 text-emerald-600 dark:text-emerald-300">Singularity AI</span>
+          <h2 class="text-2xl sm:text-3xl font-extrabold text-slate-900 dark:text-white mt-2">Singularity AI & Vector Semantic RAG</h2>
         </div>
 
-        <div class="space-y-6 text-sm text-slate-300">
-          
+        <div class="space-y-6 text-sm text-slate-700 dark:text-slate-300">
           <div class="space-y-3">
-            <h3 class="text-base font-bold text-white">Prompt Generation & Conversational Agents</h3>
-            <pre class="code-block p-4 rounded-xl text-xs overflow-x-auto text-emerald-300"><code>// 1. Basic Generation
-let response = ai_generate("Summarize daily sales");
-
-// 2. Generation with System Persona
-let advice = ai_generate(
-  "What titanium ring do you recommend for weddings?",
-  "You are the Titanium Luxury Concierge."
-);
-
-// 3. Conversational Assistant
-let chat_reply = ai_chat("Tell me about Grade 5 alloy");</code></pre>
-          </div>
-
-          <div class="space-y-3">
-            <h3 class="text-base font-bold text-white">Vector Ingestion & Semantic RAG Grounding</h3>
-            <pre class="code-block p-4 rounded-xl text-xs overflow-x-auto text-sky-300"><code>// 1. Ingest document into collection
+            <h3 class="text-base font-bold text-slate-900 dark:text-white">Vector Ingestion & Semantic RAG Grounding</h3>
+            <pre class="code-block p-4 rounded-xl text-xs overflow-x-auto text-sky-300"><code>// 1. Ingest document into vector collection
 vector_upsert("faq", "return_rule", "All unworn titanium gear can be returned within 30 days for a full refund.");
 
 // 2. Perform Semantic RAG (Retrieval Augmented Generation)
-let rag_result = ai_rag("Can I return my watch after 2 weeks?", "faq", 3);
-
-// Returns:
-// #{
-//   query: "Can I return my watch after 2 weeks?",
-//   answer: "Yes, our policy allows returns within 30 days...",
-//   sources: [#{ id: "return_rule", score: 0.94, content: "..." }],
-//   sources_count: 1
-// }</code></pre>
+let rag_result = ai_rag("Can I return my watch after 2 weeks?", "faq", 3);</code></pre>
           </div>
 
-          <div class="space-y-3">
-            <h3 class="text-base font-bold text-white">Live Token-By-Token Streaming (Frontend SSE)</h3>
-            <pre class="code-block p-4 rounded-xl text-xs overflow-x-auto text-purple-300"><code>// Stream tokens smoothly to the frontend UI
-window.Titanium.aiStream("Recommend top 3 titanium EDC pens", {
+          <div id="ai-rag-pipelines" class="space-y-3">
+            <h3 class="text-base font-bold text-slate-900 dark:text-white">Live Token-By-Token Streaming (Frontend SSE)</h3>
+            <pre class="code-block p-4 rounded-xl text-xs overflow-x-auto text-purple-300"><code>window.Titanium.aiStream("Recommend top 3 titanium EDC pens", {
   onToken: (token, fullText) => {
     document.getElementById('ai-bubble').innerText = fullText;
   },
-  onDone: (fullText) => {
-    console.log('Stream completed:', fullText);
-  },
-  onError: (err) => {
-    console.error('Stream error:', err);
-  }
+  onDone: (fullText) => console.log('Stream completed:', fullText)
 });</code></pre>
           </div>
-
         </div>
       </section>
 
       <!-- SUPERCLUSTER MESH -->
-      <section id="cluster-overview" class="space-y-6 pt-6 border-t border-white/5">
-        <div class="border-b border-white/10 pb-4">
-          <span class="badge bg-amber-500/20 text-amber-300">Distributed Mesh</span>
-          <h2 class="text-2xl sm:text-3xl font-extrabold text-white mt-2">Supercluster X Multi-Node Mesh</h2>
+      <section id="cluster-overview" class="space-y-6 pt-6 border-t border-slate-200 dark:border-white/5">
+        <div class="border-b border-slate-200 dark:border-white/10 pb-4">
+          <span class="badge bg-amber-500/20 text-amber-600 dark:text-amber-300">Distributed Mesh</span>
+          <h2 class="text-2xl sm:text-3xl font-extrabold text-slate-900 dark:text-white mt-2">Supercluster X Multi-Node Mesh</h2>
         </div>
 
-        <div class="space-y-6 text-sm text-slate-300">
-          <p>
-            Supercluster allows multiple Titanium nodes across different servers or regions to form an interconnected high-availability cluster with automatic peer discovery and SQLite WAL transaction replication.
-          </p>
-
-          <pre class="code-block p-4 rounded-xl text-xs overflow-x-auto text-amber-300"><code>// 1. Node Identity
-let current_id = cluster_node_id(); // e.g. "titanium-primary-01"
+        <div id="cluster-wal-sync" class="space-y-6 text-sm text-slate-700 dark:text-slate-300">
+          <pre class="code-block p-4 rounded-xl text-xs overflow-x-auto text-amber-300"><code>// Node Identity & Discovery
+let current_id = cluster_node_id();
 let is_leader = cluster_is_primary();
+let mesh = cluster_nodes();
 
-// 2. Discover Mesh Topology
-let nodes = cluster_nodes();
-// Returns Array of maps:
-// [
-//   #{ id: "titanium-primary-01", address: "10.0.0.1:8080", role: "primary", status: "healthy", latency_ms: 1 },
-//   #{ id: "titanium-replica-02", address: "10.0.0.2:8080", role: "replica", status: "healthy", latency_ms: 4 }
-// ]
-
-// 3. Broadcast Distributed Transaction Sync
+// Broadcast Distributed WAL Transaction Sync
 cluster_broadcast("wal_commit", #{
   table: "products",
   action: "update_stock",
   product_id: 14,
   new_stock: 45
-});
-
-// 4. Cluster Metrics
-let stats = cluster_stats();</code></pre>
+});</code></pre>
         </div>
       </section>
 
       <!-- SERVICES & RUNTIME PRIMITIVES -->
-      <section id="services-primitives" class="space-y-6 pt-6 border-t border-white/5">
-        <div class="border-b border-white/10 pb-4">
-          <span class="badge bg-rose-500/20 text-rose-300">Runtime Primitives</span>
-          <h2 class="text-2xl sm:text-3xl font-extrabold text-white mt-2">Functional Primitives Encyclopedia</h2>
-          <p class="text-xs text-slate-400">Complete reference of helper functions available globally in every Rhai script.</p>
+      <section id="services-primitives" class="space-y-6 pt-6 border-t border-slate-200 dark:border-white/5">
+        <div class="border-b border-slate-200 dark:border-white/10 pb-4">
+          <span class="badge bg-rose-500/20 text-rose-600 dark:text-rose-300">Runtime Primitives</span>
+          <h2 class="text-2xl sm:text-3xl font-extrabold text-slate-900 dark:text-white mt-2">Functional Primitives Reference</h2>
         </div>
 
         <div class="overflow-x-auto doc-card rounded-2xl">
-          <table class="w-full text-left text-xs text-slate-300">
-            <thead class="bg-white/5 text-sky-400 font-bold border-b border-white/10 font-mono uppercase">
+          <table class="w-full text-left text-xs text-slate-700 dark:text-slate-300">
+            <thead class="bg-slate-100 dark:bg-white/5 text-sky-600 dark:text-sky-400 font-bold border-b border-slate-200 dark:border-white/10 font-mono uppercase">
               <tr>
                 <th class="p-3">Category</th>
                 <th class="p-3">Function Signature</th>
-                <th class="p-3">Description & Example</th>
+                <th class="p-3">Description</th>
               </tr>
             </thead>
-            <tbody class="divide-y divide-white/5 font-mono text-[11px]">
+            <tbody class="divide-y divide-slate-200 dark:divide-white/5 font-mono text-[11px]">
               <tr>
-                <td class="p-3 text-white font-bold font-sans">Cache</td>
-                <td class="p-3 text-sky-300">cache_set(k, v, ttl)<br>cache_get(k)<br>cache_remember(k, ttl, def)</td>
+                <td class="p-3 text-slate-900 dark:text-white font-bold font-sans">Cache</td>
+                <td class="p-3 text-sky-600 dark:text-sky-300">cache_set(k, v, ttl)<br>cache_get(k)<br>cache_remember(k, ttl, def)</td>
                 <td class="p-3 font-sans">In-memory TTL cache store (Redis alternative).</td>
               </tr>
               <tr>
-                <td class="p-3 text-white font-bold font-sans">Queues</td>
-                <td class="p-3 text-purple-300">defer_job(name, payload)</td>
-                <td class="p-3 font-sans">Dispatches asynchronous task to background worker threadpool.</td>
+                <td class="p-3 text-slate-900 dark:text-white font-bold font-sans">Queues</td>
+                <td class="p-3 text-purple-600 dark:text-purple-300">defer_job(name, payload)</td>
+                <td class="p-3 font-sans">Dispatches async task to background worker pool.</td>
               </tr>
               <tr>
-                <td class="p-3 text-white font-bold font-sans">Crypto</td>
-                <td class="p-3 text-emerald-300">crypto_hash(text)<br>crypto_verify(text, hash)<br>crypto_random_token(len)</td>
-                <td class="p-3 font-sans">Cryptographic password hashing and secure token generation.</td>
+                <td class="p-3 text-slate-900 dark:text-white font-bold font-sans">Crypto</td>
+                <td class="p-3 text-emerald-600 dark:text-emerald-300">crypto_hash(text)<br>crypto_verify(text, hash)</td>
+                <td class="p-3 font-sans">Password hashing and secure token generation.</td>
               </tr>
               <tr>
-                <td class="p-3 text-white font-bold font-sans">Strings</td>
-                <td class="p-3 text-amber-300">str_contains(haystack, needle)<br>str_slug(text)<br>mask(text, keep_last)</td>
-                <td class="p-3 font-sans">String inspection, URL slugification, and credit card masking.</td>
+                <td class="p-3 text-slate-900 dark:text-white font-bold font-sans">Strings</td>
+                <td class="p-3 text-amber-600 dark:text-amber-300">str_contains(haystack, needle)<br>str_slug(text)<br>mask(text, keep_last)</td>
+                <td class="p-3 font-sans">String inspection, slugification, and masking.</td>
               </tr>
               <tr>
-                <td class="p-3 text-white font-bold font-sans">Arrays</td>
-                <td class="p-3 text-sky-300">array_pluck(arr, key)<br>array_chunk(arr, size)<br>array_group_by(arr, key)</td>
+                <td class="p-3 text-slate-900 dark:text-white font-bold font-sans">Arrays</td>
+                <td class="p-3 text-sky-600 dark:text-sky-300">array_pluck(arr, key)<br>array_chunk(arr, size)<br>array_group_by(arr, key)</td>
                 <td class="p-3 font-sans">Functional collection mapping, chunking, and grouping.</td>
-              </tr>
-              <tr>
-                <td class="p-3 text-white font-bold font-sans">Network</td>
-                <td class="p-3 text-purple-300">http_get(url, headers?)<br>http_post(url, body, headers?)</td>
-                <td class="p-3 font-sans">Server-side synchronous HTTP client requests.</td>
-              </tr>
-              <tr>
-                <td class="p-3 text-white font-bold font-sans">Files</td>
-                <td class="p-3 text-emerald-300">file_read(path)<br>file_write(path, content)<br>file_exists(path)</td>
-                <td class="p-3 font-sans">Direct filesystem read/write helpers.</td>
               </tr>
             </tbody>
           </table>
         </div>
       </section>
 
+      <!-- VISUAL WEB STUDIO -->
+      <section id="web-studio" class="space-y-6 pt-6 border-t border-slate-200 dark:border-white/5">
+        <div class="border-b border-slate-200 dark:border-white/10 pb-4">
+          <span class="badge bg-rose-500/20 text-rose-600 dark:text-rose-300">GUI Suite</span>
+          <h2 class="text-2xl sm:text-3xl font-extrabold text-slate-900 dark:text-white mt-2">Visual Web Studio GUI</h2>
+        </div>
+
+        <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 text-xs">
+          <div class="doc-card p-4 rounded-xl space-y-1">
+            <span class="text-sky-600 dark:text-sky-400 font-bold">🗄️ Database Manager</span>
+            <p class="text-slate-500 dark:text-slate-400">Browse table schemas and live SQLite rows.</p>
+          </div>
+          <div class="doc-card p-4 rounded-xl space-y-1">
+            <span class="text-indigo-600 dark:text-indigo-400 font-bold">⚡ SQL Console</span>
+            <p class="text-slate-500 dark:text-slate-400">Interactive query execution runner.</p>
+          </div>
+          <div class="doc-card p-4 rounded-xl space-y-1">
+            <span class="text-emerald-600 dark:text-emerald-400 font-bold">🧠 AI Playground</span>
+            <p class="text-slate-500 dark:text-slate-400">Live token streaming and semantic RAG tester.</p>
+          </div>
+          <div class="doc-card p-4 rounded-xl space-y-1">
+            <span class="text-amber-600 dark:text-amber-400 font-bold">🌐 Supercluster Mesh</span>
+            <p class="text-slate-500 dark:text-slate-400">Live node topology, latency, and sync dispatcher.</p>
+          </div>
+        </div>
+      </section>
+
     </main>
+
+    <!-- RIGHT SIDEBAR: On this page (TOC) -->
+    <aside class="hidden xl:block w-52 shrink-0 py-8 pl-4 toc-nav h-[calc(100vh-4rem)] sticky top-16 overflow-y-auto border-l">
+      <div class="space-y-4 text-xs">
+        <h4 class="font-bold text-slate-900 dark:text-white uppercase tracking-wider text-[11px]">On This Page</h4>
+        <ul class="space-y-2 text-slate-500 dark:text-slate-400 font-medium">
+          <li><a href="#prologue-philosophy" class="hover:text-sky-500 dark:hover:text-sky-400 transition block">Philosophy</a></li>
+          <li><a href="#prologue-installation" class="hover:text-sky-500 dark:hover:text-sky-400 transition block">Installation</a></li>
+          <li><a href="#arch-dual-engine" class="hover:text-sky-500 dark:hover:text-sky-400 transition block">Dual Engine</a></li>
+          <li><a href="#basics-routing" class="hover:text-sky-500 dark:hover:text-sky-400 transition block">Routing</a></li>
+          <li><a href="#orm-query-builder" class="hover:text-sky-500 dark:hover:text-sky-400 transition block">ActiveRecord ORM</a></li>
+          <li><a href="#section-db" class="hover:text-sky-500 dark:hover:text-sky-400 transition block">Raw SQLite</a></li>
+          <li><a href="#realtime-overview" class="hover:text-sky-500 dark:hover:text-sky-400 transition block">WebSockets</a></li>
+          <li><a href="#ai-overview" class="hover:text-sky-500 dark:hover:text-sky-400 transition block">Singularity AI</a></li>
+          <li><a href="#cluster-overview" class="hover:text-sky-500 dark:hover:text-sky-400 transition block">Supercluster</a></li>
+          <li><a href="#services-primitives" class="hover:text-sky-500 dark:hover:text-sky-400 transition block">Primitives</a></li>
+          <li><a href="#web-studio" class="hover:text-sky-500 dark:hover:text-sky-400 transition block">Web Studio</a></li>
+        </ul>
+      </div>
+    </aside>
+
   </div>
 
   <!-- Global Footer -->
-  <footer class="py-12 border-t border-white/5 text-center text-xs text-slate-500 mt-auto bg-[#04070e]">
-    <div class="max-w-7xl mx-auto px-4 space-y-3">
+  <footer class="py-10 border-t border-slate-200 dark:border-white/5 text-center text-xs text-slate-500 mt-auto bg-slate-50 dark:bg-[#04070e]">
+    <div class="max-w-7xl mx-auto px-4 space-y-2">
       <div class="flex items-center justify-center gap-2">
-        <div class="w-6 h-6 rounded-lg bg-sky-500 flex items-center justify-center text-slate-950 font-black text-xs">Ti</div>
-        <span class="font-bold text-white tracking-wider">TITANIUM (Ti22) v10.0.0 SUPERCLUSTER</span>
+        <div class="w-5 h-5 rounded-lg bg-sky-500 flex items-center justify-center text-slate-950 font-black text-xs">Ti</div>
+        <span class="font-bold text-slate-800 dark:text-white tracking-wider">TITANIUM (Ti22) v10.0.0 SUPERCLUSTER</span>
       </div>
       <p>High-Performance Native Web Platform in Rust. Distributed under the MIT License.</p>
     </div>
   </footer>
 
+  <!-- Interactive Scripts -->
   <script>
+    // Theme Toggle Functionality
+    function initTheme() {
+      const saved = localStorage.getItem('titanium_theme');
+      if (saved === 'light') {
+        document.documentElement.classList.remove('dark');
+      } else {
+        document.documentElement.classList.add('dark');
+      }
+    }
+
+    function toggleTheme() {
+      if (document.documentElement.classList.contains('dark')) {
+        document.documentElement.classList.remove('dark');
+        localStorage.setItem('titanium_theme', 'light');
+      } else {
+        document.documentElement.classList.add('dark');
+        localStorage.setItem('titanium_theme', 'dark');
+      }
+    }
+
+    initTheme();
+
+    // Instant Search
     function handleSearch(query) {
       const q = (query || '').toLowerCase().trim();
       document.querySelectorAll('main section').forEach(sec => {
