@@ -2,7 +2,7 @@ pub const STUDIO_HTML: &str = r#"<!DOCTYPE html>
 <html lang="en">
 <head>
   <meta charset="UTF-8">
-  <title>Titanium Web Studio (Ti22) v7.0.0</title>
+  <title>Titanium Web Studio (Ti22) v8.0.0</title>
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;600;700;800&family=JetBrains+Mono:wght@400;600&display=swap">
   <style>
@@ -60,6 +60,12 @@ pub const STUDIO_HTML: &str = r#"<!DOCTYPE html>
     table.data-table tr:hover { background: rgba(255, 255, 255, 0.01); }
     
     .tag { display: inline-block; padding: 4px 8px; border-radius: 4px; font-size: 11px; font-weight: 700; background: rgba(56, 189, 248, 0.1); color: var(--primary); }
+    .tag-accent { background: rgba(168, 85, 247, 0.1); color: var(--accent); }
+    .tag-success { background: rgba(16, 185, 129, 0.1); color: var(--success); }
+    
+    /* Live Log Console */
+    .log-stream { background: #050811; border: 1px solid var(--card-border); border-radius: 8px; padding: 16px; height: 260px; overflow-y: auto; font-family: 'JetBrains Mono', monospace; font-size: 12px; color: #a5f3fc; }
+    .log-entry { margin-bottom: 6px; padding-bottom: 6px; border-bottom: 1px solid rgba(255,255,255,0.05); }
   </style>
 </head>
 <body>
@@ -69,12 +75,13 @@ pub const STUDIO_HTML: &str = r#"<!DOCTYPE html>
       <span>Titanium Studio</span>
     </div>
     <div class="nav-item active" onclick="switchTab('overview', this)">📊 Overview & Metrics</div>
+    <div class="nav-item" onclick="switchTab('realtime', this)">📡 Live WebSockets</div>
     <div class="nav-item" onclick="switchTab('database', this)">🗄️ Database Manager</div>
     <div class="nav-item" onclick="switchTab('sql', this)">⚡ SQL Console</div>
     <div class="nav-item" onclick="switchTab('routes', this)">🧭 Route Map</div>
     <div class="status-badge">
       <span>●</span>
-      <span>v7.0.0 Dual Engine</span>
+      <span>v8.0.0 Hyperdrive</span>
     </div>
   </div>
 
@@ -84,31 +91,74 @@ pub const STUDIO_HTML: &str = r#"<!DOCTYPE html>
       <div class="header">
         <div>
           <h1>Engine Overview</h1>
-          <p class="subtitle">Titanium v7.0.0 (Ti22) Dual Engine Architecture — Single-File SFC + Enterprise MVC.</p>
+          <p class="subtitle">Titanium v8.0.0 (Ti22) Hyperdrive — Realtime WebSockets, Dual Engine & Embedded SQLite.</p>
         </div>
       </div>
       <div class="grid">
         <div class="stat-card">
-          <div class="stat-lbl">ENGINE ARCHITECTURE</div>
-          <div class="stat-val">Dual</div>
-          <div style="color:var(--success); font-size:12px; font-weight:700;">● SFC + Enterprise MVC</div>
+          <div class="stat-lbl">REALTIME CHANNELS</div>
+          <div class="stat-val" style="color:var(--primary);">Active</div>
+          <div style="color:var(--success); font-size:12px; font-weight:700;">● WebSockets & Live Hub</div>
         </div>
         <div class="stat-card">
-          <div class="stat-lbl">STORAGE ENGINE</div>
+          <div class="stat-lbl">STORAGE & ORM</div>
           <div class="stat-val" style="color:var(--accent);">SQLite WAL</div>
-          <div style="color:var(--muted); font-size:12px;">ActiveRecord ORM Active</div>
+          <div style="color:var(--muted); font-size:12px;">ActiveRecord Query Engine</div>
         </div>
         <div class="stat-card">
-          <div class="stat-lbl">SPA ROUTING</div>
-          <div class="stat-val" style="color:#10b981;">Turbo Native</div>
-          <div style="color:var(--muted); font-size:12px;">Zero Reloads • Soft DOM</div>
+          <div class="stat-lbl">SPA RUNTIME</div>
+          <div class="stat-val" style="color:#10b981;">Turbo Soft-DOM</div>
+          <div style="color:var(--muted); font-size:12px;">0ms Input Flashes • Morphing</div>
         </div>
       </div>
       <div class="card">
         <h3 style="margin-bottom:12px;">⚡ Platform Capabilities</h3>
         <p style="color:var(--muted); font-size:14px; line-height:1.6;">
-          Titanium v7.0.0 executes both file-based single-file components (<code>pages/</code>) and domain-driven MVC controllers (<code>app/controllers/</code>, <code>app/models/</code>, <code>app/views/</code>) simultaneously on a high-throughput multi-threaded Rust execution pipeline.
+          Titanium v8.0.0 integrates native real-time WebSockets and bi-directional live topic broadcasting directly into the multi-threaded Rust execution pipeline alongside single-file components and domain-driven MVC architecture.
         </p>
+      </div>
+    </div>
+
+    <!-- REALTIME WEBSOCKETS TAB -->
+    <div id="tab-realtime" class="tab-pane">
+      <div class="header">
+        <div>
+          <h1>Realtime WebSocket & Live Channel Inspector</h1>
+          <p class="subtitle">Monitor active topic broadcasts, connected clients, and dispatch live payloads.</p>
+        </div>
+      </div>
+
+      <div class="grid">
+        <div class="stat-card">
+          <div class="stat-lbl">LIVE CHANNELS</div>
+          <div class="stat-val" id="ws-channels-count" style="color:var(--primary);">0</div>
+          <div style="color:var(--muted); font-size:12px;">Active Topics</div>
+        </div>
+        <div class="stat-card">
+          <div class="stat-lbl">TOTAL CLIENTS</div>
+          <div class="stat-val" id="ws-clients-count" style="color:var(--accent);">0</div>
+          <div style="color:var(--muted); font-size:12px;">Connected Subscribers</div>
+        </div>
+      </div>
+
+      <div class="card">
+        <h3 style="margin-bottom:16px;">⚡ Live Topic Broadcast Tester</h3>
+        <div style="display:grid; grid-template-columns: 1fr 2fr; gap:12px; margin-bottom:12px;">
+          <div>
+            <label style="font-size:12px; color:var(--muted); display:block; margin-bottom:6px; font-weight:700;">Channel Topic</label>
+            <input id="ws-test-channel" value="inventory" style="width:100%; background:#050811; border:1px solid var(--card-border); padding:10px; border-radius:8px; color:#fff; font-family:'JetBrains Mono'; font-size:13px;" />
+          </div>
+          <div>
+            <label style="font-size:12px; color:var(--muted); display:block; margin-bottom:6px; font-weight:700;">JSON Payload</label>
+            <input id="ws-test-payload" value='{"item": "Titanium Apex Keyboard", "stock": 14, "action": "live_update"}' style="width:100%; background:#050811; border:1px solid var(--card-border); padding:10px; border-radius:8px; color:#38bdf8; font-family:'JetBrains Mono'; font-size:13px;" />
+          </div>
+        </div>
+        <button class="btn" onclick="sendWsBroadcast()">Broadcast Event</button>
+      </div>
+
+      <div class="card">
+        <h3 style="margin-bottom:16px;">📡 Live Message Feed Stream</h3>
+        <div id="ws-log-stream" class="log-stream">Connecting to live event stream...</div>
       </div>
     </div>
 
@@ -141,6 +191,7 @@ pub const STUDIO_HTML: &str = r#"<!DOCTYPE html>
             <button class="btn" onclick="runSql()">Execute Query</button>
             <button class="btn btn-secondary" onclick="document.getElementById('sql-query').value='SELECT * FROM products;'; runSql();">Products</button>
             <button class="btn btn-secondary" onclick="document.getElementById('sql-query').value='SELECT * FROM orders;'; runSql();">Orders</button>
+            <button class="btn btn-secondary" onclick="document.getElementById('sql-query').value='SELECT * FROM users;'; runSql();">Users</button>
           </div>
         </div>
         <div class="table-container" id="query-results" style="margin-top:20px;"></div>
@@ -152,7 +203,7 @@ pub const STUDIO_HTML: &str = r#"<!DOCTYPE html>
       <div class="header">
         <div>
           <h1>Active Route Map</h1>
-          <p class="subtitle">Discovered .titanium / .ti pages and API endpoints.</p>
+          <p class="subtitle">Discovered .titanium / .ti pages, MVC controllers, and API endpoints.</p>
         </div>
       </div>
       <div class="card">
@@ -169,6 +220,7 @@ pub const STUDIO_HTML: &str = r#"<!DOCTYPE html>
       el.classList.add('active');
       if (name === 'database') loadTables();
       if (name === 'routes') loadRoutes();
+      if (name === 'realtime') loadWsStats();
     }
 
     async function loadTables() {
@@ -192,7 +244,7 @@ pub const STUDIO_HTML: &str = r#"<!DOCTYPE html>
     }
 
     function queryTable(name) {
-      switchTab('sql', document.querySelectorAll('.nav-item')[2]);
+      switchTab('sql', document.querySelectorAll('.nav-item')[3]);
       document.getElementById('sql-query').value = `SELECT * FROM ${name} LIMIT 25;`;
       runSql();
     }
@@ -252,7 +304,65 @@ pub const STUDIO_HTML: &str = r#"<!DOCTYPE html>
       }
     }
 
+    async function loadWsStats() {
+      try {
+        const res = await fetch('/__titanium_ws/stats');
+        const data = await res.json();
+        document.getElementById('ws-clients-count').textContent = data.total_clients || 0;
+        document.getElementById('ws-channels-count').textContent = (data.channels || []).length;
+      } catch (_) {}
+    }
+
+    async function sendWsBroadcast() {
+      const channel = document.getElementById('ws-test-channel').value;
+      const rawPayload = document.getElementById('ws-test-payload').value;
+      let payload = rawPayload;
+      try { payload = JSON.parse(rawPayload); } catch (_) {}
+
+      try {
+        const res = await fetch('/__titanium_ws/send', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ channel, payload })
+        });
+        const data = await res.json();
+        if (data.success) {
+          appendWsLog(`📤 Broadcasted to [${channel}]: ${JSON.stringify(payload)}`);
+          loadWsStats();
+        }
+      } catch (e) {
+        alert('Broadcast failed: ' + e.message);
+      }
+    }
+
+    function appendWsLog(text) {
+      const log = document.getElementById('ws-log-stream');
+      const time = new Date().toLocaleTimeString();
+      const div = document.createElement('div');
+      div.className = 'log-entry';
+      div.textContent = `[${time}] ${text}`;
+      log.prepend(div);
+    }
+
+    // Connect to global live stream
+    function initWsLogStream() {
+      try {
+        const es = new EventSource('/__titanium_ws/stream?channel=*');
+        es.addEventListener('connected', () => {
+          document.getElementById('ws-log-stream').innerHTML = '<div class="log-entry" style="color:var(--success)">🟢 Connected to Live Titanium WebSocket Hub</div>';
+        });
+        es.addEventListener('message', (e) => {
+          try {
+            const msg = JSON.parse(e.data);
+            appendWsLog(`📥 Channel [${msg.channel}]: ${JSON.stringify(msg.payload)}`);
+            loadWsStats();
+          } catch (_) {}
+        });
+      } catch (_) {}
+    }
+
     loadTables();
+    initWsLogStream();
   </script>
 </body>
 </html>"#;

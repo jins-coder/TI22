@@ -1,8 +1,8 @@
 [package]
 name = "titanium"
-version = "7.0.0"
+version = "8.0.0"
 edition = "2021"
-description = "Titanium (Ti22) - Dual-Engine Native Web Runtime (Single-File SFC + Enterprise MVC) with Embedded SQLite, ActiveRecord ORM, and Turbo SPA"
+description = "Titanium (Ti22) - Dual-Engine Native Web Runtime with Realtime WebSockets, Embedded SQLite, ActiveRecord ORM, and Turbo SPA"
 authors = ["Titanium Team"]
 
 [dependencies]
@@ -17,6 +17,7 @@ cookie = "0.18"
 mime_guess = "2.0"
 ureq = { version = "2.10", default-features = false }
 sha2 = "0.10"
+sha1 = "0.10"
 base64 = "0.22"
 toml = "0.8"
 ctrlc = "3.4"

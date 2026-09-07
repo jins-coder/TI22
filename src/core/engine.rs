@@ -1,6 +1,6 @@
 use crate::core::context::{TitaniumRequest, TitaniumResponse};
 use crate::core::session::SessionHandle;
-use crate::services::{JobQueue, MediaUtils, PubSubHub, VectorEngine};
+use crate::services::{JobQueue, MediaUtils, PubSubHub, VectorEngine, WebSocketHub};
 use crate::storage::{CacheStore, Database, ModelDef, QueryBuilder};
 use minijinja::{Environment, Value};
 use rhai::{Array, Dynamic, Engine, Map, Scope, AST};
@@ -17,13 +17,14 @@ pub struct TitaniumEngine {
     cache: CacheStore,
     queue: JobQueue,
     pubsub: PubSubHub,
+    ws: WebSocketHub,
     rhai_engine: Arc<Engine>,
     ast_cache: Arc<Mutex<HashMap<String, AST>>>,
     rate_limiter: Arc<Mutex<HashMap<String, Vec<u64>>>>,
 }
 
 impl TitaniumEngine {
-    pub fn new(db: Database, cache: CacheStore, queue: JobQueue, pubsub: PubSubHub) -> Self {
+    pub fn new(db: Database, cache: CacheStore, queue: JobQueue, pubsub: PubSubHub, ws: WebSocketHub) -> Self {
         let mut engine = Engine::new();
         let rate_limiter = Arc::new(Mutex::new(HashMap::new()));
 
@@ -677,11 +678,46 @@ impl TitaniumEngine {
             }
         });
 
+        // ==========================================
+        // Realtime WebSockets & Live Channels (v8.0.0 Hyperdrive)
+        // ==========================================
+        let ws_c1 = ws.clone();
+        engine.register_fn("ws_broadcast", move |channel: &str, data: Dynamic| -> Dynamic {
+            let msg = ws_c1.broadcast_dynamic(channel, data);
+            rhai::serde::to_dynamic(&msg).unwrap_or(Dynamic::UNIT)
+        });
+
+        let ws_c2 = ws.clone();
+        engine.register_fn("ws_broadcast_all", move |data: Dynamic| -> Dynamic {
+            let msg = ws_c2.broadcast_dynamic("*", data);
+            rhai::serde::to_dynamic(&msg).unwrap_or(Dynamic::UNIT)
+        });
+
+        let ws_c3 = ws.clone();
+        engine.register_fn("ws_client_count", move |channel: &str| -> i64 {
+            ws_c3.client_count(channel) as i64
+        });
+
+        let ws_c4 = ws.clone();
+        engine.register_fn("ws_channels", move || -> Array {
+            let mut arr = Array::new();
+            for c in ws_c4.channels_list() {
+                arr.push(Dynamic::from(c));
+            }
+            arr
+        });
+
+        let ws_c5 = ws.clone();
+        engine.register_fn("ws_stats", move || -> Map {
+            ws_c5.stats_map()
+        });
+
         Self {
             db,
             cache,
             queue,
             pubsub,
+            ws,
             rhai_engine: Arc::new(engine),
             ast_cache: Arc::new(Mutex::new(HashMap::new())),
             rate_limiter,

@@ -7,6 +7,7 @@ use crate::core::session::SessionStore;
 use crate::server::studio::STUDIO_HTML;
 use crate::services::pubsub::PubSubHub;
 use crate::services::queue::JobQueue;
+use crate::services::websocket::WebSocketHub;
 use crate::storage::cache::CacheStore;
 use crate::storage::db::Database;
 use rhai::{Dynamic, Map};
@@ -18,6 +19,54 @@ use tiny_http::{Header, Response, Server};
 pub const TURBO_CLIENT_SCRIPT: &str = r#"
 <script>
 (function() {
+  // 0. Titanium Realtime WebSockets & Live Channels (v8.0.0 Hyperdrive)
+  window.Titanium = window.Titanium || {};
+  window.Titanium.channels = {};
+  window.Titanium.eventSources = {};
+
+  window.Titanium.subscribe = function(channel, callback) {
+    if (!window.Titanium.channels[channel]) {
+      window.Titanium.channels[channel] = [];
+      const sseUrl = '/__titanium_ws/stream?channel=' + encodeURIComponent(channel);
+      const es = new EventSource(sseUrl);
+      window.Titanium.eventSources[channel] = es;
+
+      es.addEventListener('message', (e) => {
+        try {
+          const msg = JSON.parse(e.data);
+          (window.Titanium.channels[channel] || []).forEach(cb => cb(msg.payload, msg));
+          
+          // Auto-update elements marked with data-live="channel"
+          document.querySelectorAll(`[data-live="${channel}"]`).forEach(el => {
+            const key = el.getAttribute('data-live-key');
+            if (key && msg.payload && msg.payload[key] !== undefined) {
+              el.textContent = msg.payload[key];
+              el.classList.add('scale-105', 'text-sky-400');
+              setTimeout(() => el.classList.remove('scale-105', 'text-sky-400'), 600);
+            }
+          });
+        } catch (_) {}
+      });
+    }
+
+    if (callback) window.Titanium.channels[channel].push(callback);
+
+    return () => {
+      if (callback) {
+        window.Titanium.channels[channel] = (window.Titanium.channels[channel] || []).filter(cb => cb !== callback);
+      }
+    };
+  };
+
+  window.Titanium.broadcast = async function(channel, payload) {
+    return fetch('/__titanium_ws/send', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ channel, payload })
+    }).then(r => r.json()).catch(err => ({ success: false, error: err.message }));
+  };
+
+  window.Titanium.send = window.Titanium.broadcast;
   // 1. Zero-Flicker Debounced Progress Bar Loader
   const bar = document.createElement('div');
   bar.id = '__titanium_progress';
@@ -313,7 +362,7 @@ pub fn run_server(config: ServerConfig) -> Result<(), Box<dyn std::error::Error>
         std::process::exit(0);
     });
 
-    println!("\n  ⚡ Titanium (Ti22) Native Engine v7.0.0 (Dual Engine) ready on http://{}\n", addr);
+    println!("\n  ⚡ Titanium (Ti22) Native Engine v8.0.0 (Hyperdrive) ready on http://{}\n", addr);
     println!("  🎨 Titanium Web Studio GUI accessible at: http://{}/__titanium_studio\n", addr);
 
     let root_dir = config.root_dir.clone();
@@ -342,8 +391,9 @@ pub fn run_server(config: ServerConfig) -> Result<(), Box<dyn std::error::Error>
     let cache = CacheStore::new();
     let queue = JobQueue::new(config.queue_workers);
     let pubsub = PubSubHub::new();
+    let ws = WebSocketHub::new();
 
-    let engine = TitaniumEngine::new(db.clone(), cache.clone(), queue.clone(), pubsub.clone());
+    let engine = TitaniumEngine::new(db.clone(), cache.clone(), queue.clone(), pubsub.clone(), ws.clone());
     let session_store = SessionStore::new();
 
     let router = Arc::new(Mutex::new(Router::new()));
@@ -358,6 +408,7 @@ pub fn run_server(config: ServerConfig) -> Result<(), Box<dyn std::error::Error>
     let cache_arc = Arc::new(cache);
     let queue_arc = Arc::new(queue);
     let pubsub_arc = Arc::new(pubsub);
+    let ws_arc = Arc::new(ws);
 
     let num_threads = if config.workers == 0 { 4 } else { config.workers };
     let mut handles = Vec::new();
@@ -371,6 +422,7 @@ pub fn run_server(config: ServerConfig) -> Result<(), Box<dyn std::error::Error>
         let cache = Arc::clone(&cache_arc);
         let queue = Arc::clone(&queue_arc);
         let pubsub = Arc::clone(&pubsub_arc);
+        let ws = Arc::clone(&ws_arc);
         let root_dir = root_dir.clone();
         let public_dir = public_dir.clone();
         let pages_dir = pages_dir.clone();
@@ -523,9 +575,89 @@ pub fn run_server(config: ServerConfig) -> Result<(), Box<dyn std::error::Error>
                     continue;
                 }
 
+                // Titanium v8.0.0 Realtime Live Channels Stream (SSE / WS Handshake)
+                if path == "/__titanium_ws/stream" || path == "/__titanium_ws" {
+                    let channel = parsed_url.query_pairs()
+                        .find(|(k, _)| k == "channel")
+                        .map(|(_, v)| v.to_string())
+                        .unwrap_or_else(|| "*".to_string());
+
+                    let rx = if channel == "*" {
+                        ws.subscribe_global()
+                    } else {
+                        ws.subscribe(&channel)
+                    };
+
+                    let mut sse_body = format!("event: connected\ndata: {{\"channel\":\"{}\",\"status\":\"connected\",\"version\":\"8.0.0\"}}\n\n", channel);
+                    
+                    // Flush any pending queue messages
+                    while let Ok(msg) = rx.try_recv() {
+                        if msg.channel != "ping" {
+                            let json_msg = serde_json::to_string(&msg).unwrap_or_default();
+                            sse_body.push_str(&format!("event: message\ndata: {}\n\n", json_msg));
+                        }
+                    }
+
+                    let resp = Response::from_string(sse_body)
+                        .with_status_code(200)
+                        .with_header(Header::from_bytes(&b"Content-Type"[..], &b"text/event-stream"[..]).unwrap())
+                        .with_header(Header::from_bytes(&b"Cache-Control"[..], &b"no-cache, no-transform"[..]).unwrap())
+                        .with_header(Header::from_bytes(&b"Connection"[..], &b"keep-alive"[..]).unwrap());
+                    let _ = req.respond(resp);
+                    continue;
+                }
+
+                // Titanium v8.0.0 Realtime Broadcast Endpoint
+                if path == "/__titanium_ws/send" || path == "/__titanium_ws/broadcast" {
+                    let mut body_bytes = Vec::new();
+                    let _ = req.as_reader().read_to_end(&mut body_bytes);
+                    let resp_json = match serde_json::from_slice::<serde_json::Value>(&body_bytes) {
+                        Ok(val) => {
+                            let channel = val["channel"].as_str().unwrap_or("general");
+                            let payload = val.get("payload").cloned().unwrap_or(serde_json::Value::Null);
+                            let msg = ws.broadcast(channel, payload);
+                            serde_json::json!({ "success": true, "message": msg })
+                        }
+                        Err(e) => serde_json::json!({ "success": false, "error": e.to_string() }),
+                    };
+
+                    let resp = Response::from_string(resp_json.to_string())
+                        .with_status_code(200)
+                        .with_header(Header::from_bytes(&b"Content-Type"[..], &b"application/json"[..]).unwrap());
+                    let _ = req.respond(resp);
+                    continue;
+                }
+
+                // Titanium v8.0.0 Realtime Live Channel History
+                if path == "/__titanium_ws/history" {
+                    let history = ws.recent_history();
+                    let resp = Response::from_string(serde_json::json!({ "history": history }).to_string())
+                        .with_status_code(200)
+                        .with_header(Header::from_bytes(&b"Content-Type"[..], &b"application/json"[..]).unwrap());
+                    let _ = req.respond(resp);
+                    continue;
+                }
+
+                // Titanium v8.0.0 Realtime Stats
+                if path == "/__titanium_ws/stats" || path == "/__titanium_studio/api/ws" {
+                    let total = ws.total_clients();
+                    let channels = ws.channels_list();
+                    let history = ws.recent_history();
+                    let resp = Response::from_string(serde_json::json!({
+                        "total_clients": total,
+                        "channels": channels,
+                        "recent_messages": history.len(),
+                        "version": "8.0.0"
+                    }).to_string())
+                        .with_status_code(200)
+                        .with_header(Header::from_bytes(&b"Content-Type"[..], &b"application/json"[..]).unwrap());
+                    let _ = req.respond(resp);
+                    continue;
+                }
+
                 // Titanium Diagnostics Health Endpoint
                 if path == "/__titanium_health" {
-                    let body = r#"{"status":"healthy","version":"7.0.0","engine":"Titanium (Ti22) Dual Engine","sqlite":"WAL","orm":true,"mvc":true,"cache":true,"queue":true,"pubsub":true,"vector":true,"media":true}"#;
+                    let body = r#"{"status":"healthy","version":"8.0.0","engine":"Titanium (Ti22) Hyperdrive","realtime_ws":true,"sqlite":"WAL","orm":true,"mvc":true,"cache":true,"queue":true,"pubsub":true,"vector":true,"media":true}"#;
                     let resp = Response::from_string(body)
                         .with_status_code(200)
                         .with_header(Header::from_bytes(&b"Content-Type"[..], &b"application/json"[..]).unwrap());

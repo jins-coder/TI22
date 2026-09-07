@@ -231,7 +231,7 @@ fn print_project_info(target: &PathBuf) {
     println!("  Pages Exists:    {}", pages_dir.exists());
     println!("  Migrations:      {}", migrations_dir.exists());
     println!("  Public Assets:   {}", public_dir.exists());
-    println!("  Version:         7.0.0 (Dual Engine: MVC + SFP)");
+    println!("  Version:         8.0.0 (Hyperdrive Realtime)");
     println!("  Runtime:         Rust Native Binary\n");
 }
 
@@ -243,8 +243,8 @@ fn scaffold_project(target: &PathBuf) {
     let _ = std::fs::create_dir_all(&public);
 
     let index_ti = r#"---
-let title = "Hello from Titanium v7.0.0 Dual Engine!";
-let db_info = "ActiveRecord ORM + MVC + Turbo SPA ready.";
+let title = "Hello from Titanium v8.0.0 Hyperdrive!";
+let db_info = "ActiveRecord ORM + Realtime WebSockets + MVC ready.";
 ---
 <!DOCTYPE html>
 <html lang="en">
@@ -293,7 +293,7 @@ worker_threads = 2
 fn print_help() {
     println!(
         r#"
-  ⚡ Titanium (Ti22) — Native Web Runtime v7.0.0 (Dual Engine)
+  ⚡ Titanium (Ti22) — Native Web Runtime v8.0.0 (Hyperdrive)
   
   Usage:
     titanium dev [dir]               Start live development server

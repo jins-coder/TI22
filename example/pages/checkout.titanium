@@ -47,6 +47,21 @@ if req.method == "POST" {
     session.remove("coupon_code");
     session.remove("discount_percent");
 
+    // Realtime Broadcast to Admin & Storefront
+    ws_broadcast("orders", #{
+      order_id: order_id,
+      order_number: order_num,
+      customer_name: name,
+      customer_email: email,
+      total: total,
+      items_count: cart_items.len(),
+      time: "Just now"
+    });
+    ws_broadcast("store_stats", #{
+      type: "new_sale",
+      amount: total
+    });
+
     return redirect("/order_success/" + to_string(order_id));
   } else {
     session.flash("err", "Please fill in all shipping fields.");
