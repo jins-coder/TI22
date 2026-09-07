@@ -1,12 +1,18 @@
-# ⚡ `Titanium` (Ti22) — Version 10.0.0 (Titanium X)
+<p align="center">
+  <img src="logo.svg" alt="Titanium Ti22 Logo" width="600"/>
+</p>
 
-> **The Native Multi-Paradigm Web Runtime & Distributed AI Engine.**  
-> Zero `node_modules`. Zero external runtime dependencies. Compiles to a single standalone bare-metal executable.
+<p align="center">
+  <strong>The Native Multi-Paradigm Web Runtime & Distributed AI Engine.</strong><br>
+  Zero <code>node_modules</code>. Zero external runtime dependencies. Compiles to a single standalone bare-metal executable.
+</p>
 
-[![CI & Deploy Documentation](https://github.com/jins-coder/TI22/actions/workflows/deploy-docs.yml/badge.svg)](https://github.com/jins-coder/TI22/actions/workflows/deploy-docs.yml)
-[![License: MIT](https://img.shields.io/badge/License-MIT-blue.svg)](LICENSE)
-[![Rust](https://img.shields.io/badge/Rust-1.75%2B-orange.svg)](https://www.rust-lang.org/)
-[![Version](https://img.shields.io/badge/version-10.0.0--Supercluster-sky.svg)](https://github.com/jins-coder/TI22)
+<p align="center">
+  <a href="https://github.com/jins-coder/TI22/actions/workflows/deploy-docs.yml"><img src="https://github.com/jins-coder/TI22/actions/workflows/deploy-docs.yml/badge.svg" alt="CI & Deploy Documentation"/></a>
+  <a href="LICENSE"><img src="https://img.shields.io/badge/License-MIT-blue.svg" alt="License: MIT"/></a>
+  <a href="https://www.rust-lang.org/"><img src="https://img.shields.io/badge/Rust-1.75%2B-orange.svg" alt="Rust"/></a>
+  <a href="https://github.com/jins-coder/TI22"><img src="https://img.shields.io/badge/version-10.0.0--Supercluster-sky.svg" alt="Version"/></a>
+</p>
 
 ---
 
